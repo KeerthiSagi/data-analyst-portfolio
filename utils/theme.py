@@ -259,7 +259,8 @@ def apply_theme():
         .st-key-kpi_revenue,
         .st-key-kpi_profit,
         .st-key-kpi_margin,
-        .st-key-kpi_orders {
+        .st-key-kpi_orders,
+        .st-key-kpi_aov {
             background-color: #FFFFFF;
             border: 1px solid #E2E8F0 !important;
             border-radius: 18px !important;
@@ -271,6 +272,7 @@ def apply_theme():
         .st-key-kpi_profit { border-top: 4px solid #10B981 !important; }
         .st-key-kpi_margin { border-top: 4px solid #8B5CF6 !important; }
         .st-key-kpi_orders { border-top: 4px solid #0EA5E9 !important; }
+        .st-key-kpi_aov { border-top: 4px solid #0EA5E9 !important; }
 
         .kpi-label-row {
             display: flex;
@@ -421,7 +423,8 @@ def apply_theme():
             .st-key-kpi_revenue,
             .st-key-kpi_profit,
             .st-key-kpi_margin,
-            .st-key-kpi_orders {
+            .st-key-kpi_orders,
+            .st-key-kpi_aov {
                 padding: 16px 14px 6px 14px !important;
             }
 
