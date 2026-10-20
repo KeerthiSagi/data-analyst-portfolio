@@ -2,18 +2,31 @@ import html
 
 import streamlit as st
 import pandas as pd
-import numpy as np
-import plotly.express as px
 
 from utils.theme import initialize_theme
 from utils.data_loader import load_superstore_data
 from utils.kpi_metrics import (
     aggregate_kpi_trends,
     build_sparkline,
+    format_display_date,
     format_exact_currency,
     format_headline_currency,
     format_period_comparison,
     prior_period_caption,
+)
+from utils.executive_analytics import (
+    GROUP_METRICS,
+    TREND_BOTH,
+    TREND_MARGIN,
+    TREND_PROFIT,
+    TREND_REVENUE,
+    build_executive_insights,
+    build_performance_bar,
+    build_trend_figure,
+    discount_margin_bands,
+    format_revenue_mix,
+    metric_has_negative,
+    summarize_groups,
 )
 
 
@@ -392,152 +405,128 @@ st.write("")
 
 
 # ============================================================
-# MONTHLY PERFORMANCE
+# EXECUTIVE ANALYTICS
+# Reuse the sparkline buckets for the trend chart so margin,
+# frequency, and gaps stay consistent with the KPI cards.
 # ============================================================
 
-monthly = (
-    filtered_df
-    .groupby("Year_Month", as_index=False)
-    [["Sales", "Profit"]]
-    .sum()
+category_summary = summarize_groups(filtered_df, "Category")
+region_summary = summarize_groups(filtered_df, "Region")
+discount_bands = discount_margin_bands(filtered_df)
+prior_window = None
+if comparison_ready:
+    prior_window = (
+        f"{format_display_date(previous_start)} – {format_display_date(previous_end)}"
+    )
+
+insights = build_executive_insights(
+    categories=category_summary,
+    regions=region_summary,
+    comparison_ready=comparison_ready,
+    revenue_change=revenue_change,
+    margin_change=margin_change,
+    prior_window=prior_window,
+    discount_bands=discount_bands,
 )
 
-monthly = monthly.rename(
-    columns={
-        "Sales": "Revenue",
-        "Profit": "Profit"
-    }
+
+def render_chart(figure, empty_message, chart_key):
+    if figure is None:
+        st.info(empty_message)
+        return
+    st.plotly_chart(
+        figure,
+        width="stretch",
+        theme=None,
+        key=chart_key,
+    )
+
+
+def selected_metric(label, options, default, widget_key):
+    choice = st.segmented_control(
+        label,
+        options=options,
+        default=default,
+        key=widget_key,
+        width="content",
+        wrap=True,
+    )
+    return choice or default
+
+
+# ============================================================
+# REVENUE & PROFIT TRENDS
+# ============================================================
+
+st.subheader("Revenue & Profit Trends")
+
+trend_metric = selected_metric(
+    "Trend metric",
+    options=[TREND_BOTH, TREND_REVENUE, TREND_PROFIT, TREND_MARGIN],
+    default=TREND_BOTH,
+    widget_key="exec_trend_metric",
+)
+
+trend_note = (
+    f"{trends.grain} buckets. Profit margin is period profit divided by period revenue. "
+    "Periods with no revenue are left blank on the margin series."
+)
+if trend_metric == TREND_BOTH:
+    trend_note += " Revenue and profit use separate axes because their scales differ."
+st.caption(trend_note)
+
+render_chart(
+    build_trend_figure(trends, trend_metric),
+    "No trend points are available for this metric.",
+    "exec_trend_chart",
 )
 
 
 # ============================================================
-# CHART ROW 1
-# ============================================================
-
-left, right = st.columns([3, 2])
-
-with left:
-
-    st.subheader("Revenue & Profit Trends")
-
-    fig_line = px.line(
-        monthly,
-        x="Year_Month",
-        y=["Revenue", "Profit"],
-        markers=True,
-        color_discrete_sequence=[
-            "#4F46E5",
-            "#10B981"
-        ],
-        labels={
-            "Year_Month": "Month",
-            "value": "Amount ($)",
-            "variable": "Metric"
-        }
-    )
-
-    fig_line.update_layout(
-        height=400,
-        margin=dict(l=20, r=20, t=30, b=20),
-        hovermode="x unified",
-        legend_title_text="",
-        plot_bgcolor="white",
-        paper_bgcolor="white"
-    )
-
-    st.plotly_chart(
-        fig_line,
-        width="stretch"
-    )
-
-
-with right:
-
-    st.subheader("Revenue Composition")
-
-    category_data = (
-        filtered_df
-        .groupby("Category", as_index=False)["Sales"]
-        .sum()
-    )
-
-    fig_donut = px.pie(
-        category_data,
-        values="Sales",
-        names="Category",
-        hole=0.62,
-        color_discrete_sequence=[
-            "#4F46E5",
-            "#8B5CF6",
-            "#A5B4FC"
-        ]
-    )
-
-    fig_donut.update_layout(
-        height=400,
-        margin=dict(l=20, r=20, t=30, b=20),
-        paper_bgcolor="white",
-        legend=dict(
-            orientation="h",
-            y=-0.1
-        ),
-        annotations=[
-            dict(
-                text="REVENUE MIX",
-                x=0.5,
-                y=0.5,
-                font=dict(
-                    size=13,
-                    color="#64748B"
-                ),
-                showarrow=False
-            )
-        ]
-    )
-
-    st.plotly_chart(
-        fig_donut,
-        width="stretch"
-    )
-
-
-# ============================================================
-# REGIONAL PERFORMANCE
+# REVENUE COMPOSITION
 # ============================================================
 
 st.write("")
+st.subheader("Revenue Composition")
 
+category_metric = selected_metric(
+    "Category metric",
+    options=list(GROUP_METRICS),
+    default=TREND_REVENUE,
+    widget_key="exec_category_metric",
+)
+st.caption(format_revenue_mix(category_summary))
+
+render_chart(
+    build_performance_bar(category_summary, category_metric, orientation="v"),
+    "No category values are available for this metric.",
+    "exec_category_chart",
+)
+
+
+# ============================================================
+# GEOGRAPHIC REVENUE PERFORMANCE
+# ============================================================
+
+st.write("")
 st.subheader("Geographic Revenue Performance")
 
-regional = (
-    filtered_df
-    .groupby("Region", as_index=False)["Sales"]
-    .sum()
-    .sort_values("Sales", ascending=True)
+region_metric = selected_metric(
+    "Region metric",
+    options=list(GROUP_METRICS),
+    default=TREND_REVENUE,
+    widget_key="exec_region_metric",
 )
 
-fig_region = px.bar(
-    regional,
-    x="Sales",
-    y="Region",
-    orientation="h",
-    color_discrete_sequence=["#6366F1"],
-    labels={
-        "Sales": "Revenue ($)",
-        "Region": "Region"
-    }
-)
+region_note = f"Regions ranked by {region_metric.lower()}."
+if metric_has_negative(region_summary, region_metric):
+    region_note += " Red bars are negative values."
+st.caption(region_note)
 
-fig_region.update_layout(
-    height=340,
-    margin=dict(l=20, r=20, t=20, b=20),
-    plot_bgcolor="white",
-    paper_bgcolor="white"
-)
-
-st.plotly_chart(
-    fig_region,
-    width="stretch"
+render_chart(
+    build_performance_bar(region_summary, region_metric, orientation="h"),
+    "No regional values are available for this metric.",
+    "exec_region_chart",
 )
 
 
@@ -548,68 +537,21 @@ st.plotly_chart(
 st.write("")
 st.subheader("Executive Insights")
 
-top_category = (
-    category_data
-    .sort_values("Sales", ascending=False)
-    .iloc[0]["Category"]
-)
-
-top_region = (
-    regional
-    .sort_values("Sales", ascending=False)
-    .iloc[0]["Region"]
-)
-
-profit_status = (
-    "positive profitability"
-    if total_profit >= 0
-    else "negative profitability"
-)
-
-i1, i2, i3 = st.columns(3)
-
-with i1:
-    st.markdown(
-        f"""
-        <div class="insight-card">
-            <div class="insight-title">Revenue Leader</div>
-            <div class="insight-body">
-                {top_category} contributes the highest revenue
-                among product categories.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-with i2:
-    st.markdown(
-        f"""
-        <div class="insight-card">
-            <div class="insight-title">Top Performing Region</div>
-            <div class="insight-body">
-                {top_region} generates the highest sales
-                in the selected reporting period.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-with i3:
-    st.markdown(
-        f"""
-        <div class="insight-card">
-            <div class="insight-title">Profitability Health</div>
-            <div class="insight-body">
-                The business reports {profit_status},
-                with an overall profit margin of
-                {profit_margin:.2f}%.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+if not insights:
+    st.info("No executive insights are available for this selection.")
+else:
+    insight_columns = st.columns(2, gap="small", wrap=True)
+    for index, insight in enumerate(insights):
+        with insight_columns[index % 2]:
+            st.markdown(
+                f"""
+                <div class="insight-card">
+                    <div class="insight-title">{html.escape(insight.title)}</div>
+                    <div class="insight-body">{html.escape(insight.body)}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
 
 # ============================================================
