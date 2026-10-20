@@ -1,3 +1,5 @@
+import html
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -5,6 +7,14 @@ import plotly.express as px
 
 from utils.theme import initialize_theme
 from utils.data_loader import load_superstore_data
+from utils.kpi_metrics import (
+    aggregate_kpi_trends,
+    build_sparkline,
+    format_exact_currency,
+    format_headline_currency,
+    format_period_comparison,
+    prior_period_caption,
+)
 
 
 # ============================================================
@@ -189,6 +199,11 @@ if previous_start >= dataset_start:
     ].copy()
 
 
+previous_revenue = None
+previous_profit = None
+previous_orders = None
+comparison_ready = not previous_df.empty
+
 if not previous_df.empty:
 
     previous_revenue = previous_df["Sales"].sum()
@@ -224,77 +239,155 @@ if not previous_df.empty:
 # KPI CARDS
 # ============================================================
 
-def kpi_card(label, value, footer, color, change=None, unit="%"):
+trends = aggregate_kpi_trends(filtered_df, start_date, end_date)
+comparison_detail = prior_period_caption(
+    previous_start,
+    previous_end,
+    comparison_ready,
+)
 
-    if change is None:
-        comparison_text = "No prior-period data"
-        comparison_color = "#94A3B8"
-    else:
-        arrow = "▲" if change >= 0 else "▼"
-        comparison_text = f"{arrow} {abs(change):.1f}{unit} vs prior period"
-        comparison_color = (
-            "#059669" if change >= 0 else "#DC2626"
-        )
 
-    st.markdown(
-        f"""
-        <div class="kpi-card kpi-{color}">
-            <div class="kpi-label">{label}</div>
-            <div class="kpi-value">{value}</div>
-            <div class="kpi-footer">{footer}</div>
-            <div style="
-                margin-top:12px;
-                font-size:0.78rem;
-                font-weight:700;
-                color:{comparison_color};
-            ">
-                {comparison_text}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+def render_kpi_card(
+    column,
+    *,
+    card_key,
+    label,
+    value,
+    value_title,
+    accent,
+    comparison,
+    comparison_color,
+    footer,
+    figure,
+    chart_key,
+):
+    """Premium KPI card: metric, prior-period comparison, and sparkline."""
 
-k1, k2, k3, k4 = st.columns(4)
+    with column:
+        with st.container(border=True, key=card_key, height="stretch", gap="xxsmall"):
+            st.markdown(
+                f"""
+                <div class="kpi-card-body kpi-{accent}">
+                    <div class="kpi-label-row">
+                        <div class="kpi-label">{html.escape(label)}</div>
+                        <div class="kpi-grain">{html.escape(trends.grain)}</div>
+                    </div>
+                    <div class="kpi-value" title="{html.escape(value_title)}">{html.escape(value)}</div>
+                    <div
+                        class="kpi-comparison"
+                        style="color:{comparison_color};"
+                        title="{html.escape(comparison_detail)}"
+                    >{html.escape(comparison)}</div>
+                    <div class="kpi-footer">{html.escape(footer)}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-with k1:
-    kpi_card(
-        "Total Revenue",
-        f"${total_revenue:,.0f}",
-        "Gross sales generated",
-        "indigo",
-        revenue_change
-    )
+            if figure is None:
+                st.markdown(
+                    '<div class="kpi-spark-empty">No trend in this period</div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.plotly_chart(
+                    figure,
+                    width="stretch",
+                    height=78,
+                    theme=None,
+                    config={
+                        "displayModeBar": False,
+                        "responsive": True,
+                    },
+                    key=chart_key,
+                )
 
-with k2:
-    kpi_card(
-        "Total Profit",
-        f"${total_profit:,.0f}",
-        "Reported transaction profit",
-        "green",
-        profit_change
-    )
 
-with k3:
-    kpi_card(
-        "Profit Margin",
-        f"{profit_margin:.2f}%",
-        "Profit as a share of revenue",
-        "violet",
-        margin_change,
-        unit=" pp"
-    )
+revenue_comparison, revenue_color = format_period_comparison(
+    revenue_change,
+    metric="revenue",
+    current=total_revenue,
+    previous=previous_revenue,
+)
+profit_comparison, profit_color = format_period_comparison(
+    profit_change,
+    metric="profit",
+    current=total_profit,
+    previous=previous_profit,
+)
+margin_comparison, margin_color = format_period_comparison(
+    margin_change,
+    unit=" pp",
+    metric="margin",
+)
+orders_comparison, orders_color = format_period_comparison(
+    orders_change,
+    metric="orders",
+    current=total_orders,
+    previous=previous_orders,
+)
 
-with k4:
-    kpi_card(
-        "Total Orders",
-        f"{total_orders:,}",
-        "Unique customer orders",
-        "sky",
-        orders_change
-    )
+k1, k2, k3, k4 = st.columns(4, gap="small", wrap=True)
 
-st.write("")
+render_kpi_card(
+    k1,
+    card_key="kpi_revenue",
+    label="Total Revenue",
+    value=format_headline_currency(total_revenue),
+    value_title=f"Exact revenue: {format_exact_currency(total_revenue)}",
+    accent="indigo",
+    comparison=revenue_comparison,
+    comparison_color=revenue_color,
+    footer="Gross sales generated",
+    figure=build_sparkline(trends.revenue, "revenue"),
+    chart_key="sparkline_revenue",
+)
+
+render_kpi_card(
+    k2,
+    card_key="kpi_profit",
+    label="Total Profit",
+    value=format_headline_currency(total_profit),
+    value_title=f"Exact profit: {format_exact_currency(total_profit)}",
+    accent="emerald",
+    comparison=profit_comparison,
+    comparison_color=profit_color,
+    footer="Reported transaction profit",
+    figure=build_sparkline(trends.profit, "profit"),
+    chart_key="sparkline_profit",
+)
+
+render_kpi_card(
+    k3,
+    card_key="kpi_margin",
+    label="Profit Margin",
+    value=f"{profit_margin:.2f}%",
+    value_title="Profit divided by revenue",
+    accent="violet",
+    comparison=margin_comparison,
+    comparison_color=margin_color,
+    footer="Profit as a share of revenue",
+    figure=build_sparkline(trends.margin, "margin"),
+    chart_key="sparkline_margin",
+)
+
+render_kpi_card(
+    k4,
+    card_key="kpi_orders",
+    label="Total Orders",
+    value=f"{total_orders:,}",
+    value_title=f"Exact distinct orders: {total_orders:,}",
+    accent="sky",
+    comparison=orders_comparison,
+    comparison_color=orders_color,
+    footer="Unique customer orders",
+    figure=build_sparkline(trends.orders, "orders"),
+    chart_key="sparkline_orders",
+)
+
+if comparison_ready:
+    st.caption(comparison_detail)
+
 st.write("")
 
 
@@ -354,7 +447,7 @@ with left:
 
     st.plotly_chart(
         fig_line,
-        use_container_width=True
+        width="stretch"
     )
 
 
@@ -404,7 +497,7 @@ with right:
 
     st.plotly_chart(
         fig_donut,
-        use_container_width=True
+        width="stretch"
     )
 
 
@@ -444,7 +537,7 @@ fig_region.update_layout(
 
 st.plotly_chart(
     fig_region,
-    use_container_width=True
+    width="stretch"
 )
 
 
