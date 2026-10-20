@@ -55,21 +55,6 @@ st.sidebar.markdown(
 
 st.sidebar.markdown("### Report Filters")
 
-# ============================================================
-# REPORTING YEAR FILTER
-# ============================================================
-
-available_years = sorted(
-    df["Order_Date"].dt.year.dropna().unique().tolist()
-)
-
-selected_years = st.sidebar.multiselect(
-    "Reporting Years",
-    options=available_years,
-    default=available_years,
-    help="Select one or more years to analyze."
-)
-
 min_date = df["Order_Date"].min().date()
 max_date = df["Order_Date"].max().date()
 
@@ -110,8 +95,6 @@ else:
 # ============================================================
 
 filtered_df = df[
-    (df["Order_Date"].dt.year.isin(selected_years))
-    &
     (df["Order_Date"].dt.date >= start_date)
     &
     (df["Order_Date"].dt.date <= end_date)
@@ -175,64 +158,36 @@ def calculate_change(current, previous):
     return (current - previous) / abs(previous) * 100
 
 
-previous_df = pd.DataFrame()
-
-# Comparisons require consecutive selected years.
-years_are_consecutive = (
-    len(selected_years) > 0
-    and selected_years == list(
-        range(min(selected_years), max(selected_years) + 1)
-    )
-)
-
-if years_are_consecutive:
-
-    period_length = len(selected_years)
-
-    previous_years = list(
-        range(
-            min(selected_years) - period_length,
-            min(selected_years)
-        )
-    )
-
-    # Only compare when the entire previous period exists.
-    if set(previous_years).issubset(set(available_years)):
-
-        previous_df = df[
-            (df["Order_Date"].dt.year.isin(previous_years))
-            &
-            (df["Region"].isin(selected_regions))
-            &
-            (df["Category"].isin(selected_categories))
-        ].copy()
-
-        # Match the selected month/day window for a single-year
-        # comparison when both date inputs fall in that year.
-        if (
-            period_length == 1
-            and start_date.year == end_date.year
-            and start_date.year == selected_years[0]
-        ):
-            previous_df = previous_df[
-                (
-                    (previous_df["Order_Date"].dt.month * 100
-                     + previous_df["Order_Date"].dt.day)
-                    >= (start_date.month * 100 + start_date.day)
-                )
-                &
-                (
-                    (previous_df["Order_Date"].dt.month * 100
-                     + previous_df["Order_Date"].dt.day)
-                    <= (end_date.month * 100 + end_date.day)
-                )
-            ]
-
-
 revenue_change = None
 profit_change = None
 margin_change = None
 orders_change = None
+
+previous_df = pd.DataFrame()
+
+# Determine the number of calendar days in the selected period.
+period_days = (end_date - start_date).days + 1
+
+# Compare against an equally long period immediately before it.
+previous_end = start_date - pd.Timedelta(days=1)
+previous_start = previous_end - pd.Timedelta(days=period_days - 1)
+
+dataset_start = df["Order_Date"].min().date()
+
+# Only calculate comparisons when the entire previous
+# reporting period is covered by the dataset.
+if previous_start >= dataset_start:
+
+    previous_df = df[
+        (df["Order_Date"].dt.date >= previous_start)
+        &
+        (df["Order_Date"].dt.date <= previous_end)
+        &
+        (df["Region"].isin(selected_regions))
+        &
+        (df["Category"].isin(selected_categories))
+    ].copy()
+
 
 if not previous_df.empty:
 
@@ -247,15 +202,18 @@ if not previous_df.empty:
     )
 
     revenue_change = calculate_change(
-        total_revenue, previous_revenue
+        total_revenue,
+        previous_revenue
     )
 
     profit_change = calculate_change(
-        total_profit, previous_profit
+        total_profit,
+        previous_profit
     )
 
     orders_change = calculate_change(
-        total_orders, previous_orders
+        total_orders,
+        previous_orders
     )
 
     if previous_margin is not None:
