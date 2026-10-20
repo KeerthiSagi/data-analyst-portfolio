@@ -6,15 +6,25 @@ import streamlit as st
 from utils.data_loader import load_superstore_data
 from utils.kpi_metrics import format_exact_currency, format_headline_currency
 from utils.segment_analytics import (
+    DISCOUNT_METRICS,
     METRIC_SPECS,
+    TREND_METRICS,
+    aggregate_discount_profitability,
     aggregate_segment_performance,
+    aggregate_segment_trends,
+    build_discount_chart,
+    build_loss_chart,
     build_margin_chart,
     build_revenue_contribution,
     build_segment_comparison,
+    build_segment_insights,
+    build_segment_trend,
     calculate_segment_kpis,
     filter_orders,
+    loss_analysis_caption,
     profit_contribution_caption,
     profitability_highlights,
+    trend_caption,
 )
 from utils.theme import initialize_theme
 
@@ -104,6 +114,9 @@ if filtered.empty:
 kpis = calculate_segment_kpis(filtered)
 performance = aggregate_segment_performance(filtered)
 highlights = profitability_highlights(performance)
+discount = aggregate_discount_profitability(filtered)
+trends = aggregate_segment_trends(filtered, start_date, end_date)
+insights = build_segment_insights(performance, discount, trends)
 
 
 def display_margin(value):
@@ -269,6 +282,89 @@ st.write("")
 
 
 # ============================================================
+# LOSS ANALYSIS
+# ============================================================
+
+st.subheader("Segment Loss Analysis")
+st.caption(loss_analysis_caption(performance))
+render_chart(
+    build_loss_chart(performance),
+    "No negative-profit line items are available for this selection.",
+    "segment_loss_chart",
+)
+
+st.write("")
+
+
+# ============================================================
+# DISCOUNT AND PROFITABILITY
+# ============================================================
+
+st.subheader("Discount & Profitability Analysis")
+discount_metric = selected_metric(
+    "Discount metric",
+    options=list(DISCOUNT_METRICS),
+    default="Profit Margin",
+    widget_key="segment_discount_metric",
+)
+st.caption(
+    "Bands do not overlap: 10%, 20%, and 30% close the band they fall in. "
+    "Margin is aggregate profit divided by aggregate revenue. "
+    "The pattern is an observed association between discount band and profitability."
+)
+render_chart(
+    build_discount_chart(discount, discount_metric),
+    "Discount results are unavailable for this selection.",
+    "segment_discount_chart",
+)
+
+st.write("")
+
+
+# ============================================================
+# SEGMENT TRENDS
+# ============================================================
+
+st.subheader("Segment Performance Trends")
+trend_metric = selected_metric(
+    "Trend metric",
+    options=list(TREND_METRICS),
+    default="Revenue",
+    widget_key="segment_trend_metric",
+)
+st.caption(trend_caption(trends))
+render_chart(
+    build_segment_trend(trends, trend_metric),
+    "No trend values are available for this metric.",
+    "segment_trend_chart",
+)
+
+st.write("")
+
+
+# ============================================================
+# DYNAMIC INSIGHTS
+# ============================================================
+
+st.subheader("Customer Segment Insights")
+if insights:
+    insight_columns = st.columns(min(len(insights), 2), gap="small", wrap=True)
+    for index, note in enumerate(insights):
+        with insight_columns[index % 2]:
+            st.markdown(
+                f"""
+                <div class="insight-card">
+                    <div class="insight-title">{html.escape(note["title"])}</div>
+                    <div class="insight-body">{html.escape(note["body"])}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+st.write("")
+
+
+# ============================================================
 # COMPARISON TABLE
 # ============================================================
 
@@ -276,7 +372,8 @@ st.subheader("Segment Comparison Detail")
 st.caption(
     "Distinct orders are counted inside each segment. An order that appears in more "
     "than one segment is counted in each of those rows, so the order column is not "
-    "expected to add up to the page total."
+    "expected to add up to the page total. Average discount is the arithmetic mean "
+    "of line-item discount rates. Negative-profit counts are line items, not orders."
 )
 
 table = performance.rename(
@@ -288,6 +385,9 @@ table = performance.rename(
         "margin": "Profit Margin",
         "orders": "Unique Orders",
         "aov": "Average Order Value",
+        "average_discount": "Average Discount",
+        "negative_line_items": "Negative-Profit Line Items",
+        "negative_line_rate": "Negative-Profit Line Item Rate",
     }
 )[
     [
@@ -298,6 +398,9 @@ table = performance.rename(
         "Profit Margin",
         "Unique Orders",
         "Average Order Value",
+        "Average Discount",
+        "Negative-Profit Line Items",
+        "Negative-Profit Line Item Rate",
     ]
 ]
 
@@ -312,6 +415,9 @@ st.dataframe(
         "Profit Margin": st.column_config.NumberColumn(format="%.2f%%"),
         "Unique Orders": st.column_config.NumberColumn(format="%,d"),
         "Average Order Value": st.column_config.NumberColumn(format="$%,.2f"),
+        "Average Discount": st.column_config.NumberColumn(format="%.1f%%"),
+        "Negative-Profit Line Items": st.column_config.NumberColumn(format="%,d"),
+        "Negative-Profit Line Item Rate": st.column_config.NumberColumn(format="%.1f%%"),
     },
 )
 
