@@ -252,64 +252,101 @@ def apply_theme():
 
         /* ===================================================
            PREMIUM KPI CARDS
+           Keys are the documented st-key-* classes Streamlit
+           adds when a widget or container key is set.
         =================================================== */
 
-        .kpi-card {
+        .st-key-kpi_revenue,
+        .st-key-kpi_profit,
+        .st-key-kpi_margin,
+        .st-key-kpi_orders {
             background-color: #FFFFFF;
-            border: 1px solid #E2E8F0;
-            border-radius: 18px;
-            padding: 24px;
-            min-height: 165px;
+            border: 1px solid #E2E8F0 !important;
+            border-radius: 18px !important;
+            padding: 18px 16px 8px 16px !important;
             box-shadow: 0 5px 20px rgba(15, 23, 42, 0.045);
-            transition: transform 0.2s ease,
-                        box-shadow 0.2s ease;
         }
 
-        .kpi-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+        .st-key-kpi_revenue { border-top: 4px solid #4F46E5 !important; }
+        .st-key-kpi_profit { border-top: 4px solid #10B981 !important; }
+        .st-key-kpi_margin { border-top: 4px solid #8B5CF6 !important; }
+        .st-key-kpi_orders { border-top: 4px solid #0EA5E9 !important; }
+
+        .kpi-label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 8px;
         }
 
         .kpi-label {
-            font-size: 0.78rem;
+            font-size: 0.74rem;
             font-weight: 700;
             letter-spacing: 0.7px;
             color: #64748B;
             text-transform: uppercase;
         }
 
+        .kpi-grain {
+            font-size: 0.66rem;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            color: #94A3B8;
+            text-transform: uppercase;
+        }
+
         .kpi-value {
-            font-size: 2rem;
+            font-size: clamp(1.4rem, 1.7vw, 1.9rem);
             font-weight: 800;
             color: #0F172A;
-            margin-top: 14px;
-            letter-spacing: -1px;
-            line-height: 1.2;
+            margin-top: 10px;
+            letter-spacing: -0.8px;
+            line-height: 1.15;
+        }
+
+        .kpi-comparison {
+            margin-top: 8px;
+            min-height: 2.5em;
+            font-size: 0.8rem;
+            font-weight: 700;
+            line-height: 1.35;
         }
 
         .kpi-footer {
-            margin-top: 14px;
-            font-size: 0.78rem;
+            margin-top: 4px;
+            font-size: 0.75rem;
             color: #64748B;
             line-height: 1.4;
         }
 
-        /* KPI accent colors */
-
-        .kpi-indigo {
-            border-top: 4px solid #4F46E5;
+        .kpi-spark-empty {
+            height: 78px;
+            display: flex;
+            align-items: center;
+            color: #94A3B8;
+            font-size: 0.75rem;
         }
 
-        .kpi-green {
-            border-top: 4px solid #10B981;
+        /* Sparklines sit inside the card, so they do not get chart chrome. */
+
+        [class*="st-key-sparkline_"] {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 2px 0 0 0 !important;
+            border-radius: 0 !important;
+            overflow: visible !important;
         }
 
-        .kpi-violet {
-            border-top: 4px solid #8B5CF6;
-        }
-
-        .kpi-sky {
-            border-top: 4px solid #0EA5E9;
+        [class*="st-key-sparkline_"] [data-testid="stPlotlyChart"] {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+            overflow: visible !important;
         }
 
 
@@ -381,13 +418,15 @@ def apply_theme():
                 font-size: 1.8rem;
             }
 
-            .kpi-card {
-                min-height: 145px;
-                padding: 18px;
+            .st-key-kpi_revenue,
+            .st-key-kpi_profit,
+            .st-key-kpi_margin,
+            .st-key-kpi_orders {
+                padding: 16px 14px 6px 14px !important;
             }
 
             .kpi-value {
-                font-size: 1.6rem;
+                font-size: 1.55rem;
             }
 
         }
