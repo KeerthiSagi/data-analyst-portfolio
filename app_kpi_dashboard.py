@@ -3,202 +3,571 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 
-# 1. Page Configuration
+from utils.theme import initialize_theme
+from utils.data_loader import load_superstore_data
+
+
+# ============================================================
+# PAGE CONFIGURATION
+# ============================================================
+
 st.set_page_config(
-    page_title="Executive Enterprise KPI Dashboard",
+    page_title="Executive Overview | Atlas Analytics",
     page_icon="📊",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-st.title("📊 Executive Enterprise Performance Dashboard")
-st.markdown(
-    "Interactive business intelligence portal tracking financial performance, "
-    "customer segments, and margin health across global operations."
+initialize_theme()
+
+
+# ============================================================
+# INITIALIZE DATA — GLOBAL SUPERSTORE
+# ============================================================
+
+df = load_superstore_data()
+
+
+# ============================================================
+# SIDEBAR
+# ============================================================
+
+st.sidebar.markdown(
+    """
+    <div style="
+        font-size:1.15rem;
+        font-weight:800;
+        color:#4F46E5;
+        margin-bottom:5px;
+    ">
+        ◈ ATLAS ANALYTICS
+    </div>
+    <div style="
+        color:#64748B;
+        font-size:0.8rem;
+        margin-bottom:25px;
+    ">
+        Global Sales Intelligence
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
-# 2. Comprehensive Enterprise Dataset Generator
-@st.cache_data
-def generate_enterprise_data():
-    np.random.seed(42)
-    n_rows = 1200
-    
-    date_range = pd.date_range(start="2025-01-01", end="2026-03-31", freq="D")
-    dates = np.random.choice(date_range, size=n_rows)
-    
-    regions = ["North America", "Europe", "Asia-Pacific", "Latin America"]
-    categories = {
-        "Technology": ["Phones", "Laptops", "Accessories", "Printers"],
-        "Furniture": ["Chairs", "Bookcases", "Tables", "Furnishings"],
-        "Office Supplies": ["Storage", "Art", "Appliances", "Binders"]
-    }
-    segments = ["Consumer", "Corporate", "Home Office"]
-    ship_modes = ["Standard Class", "Second Class", "First Class", "Same Day"]
+st.sidebar.markdown("### Report Filters")
 
-    records = []
-    for i in range(n_rows):
-        region = np.random.choice(regions)
-        cat = np.random.choice(list(categories.keys()))
-        sub_cat = np.random.choice(categories[cat])
-        segment = np.random.choice(segments)
-        ship_mode = np.random.choice(ship_modes)
-        
-        # Realistic business financial mechanics
-        base_price = np.random.uniform(20, 800)
-        quantity = np.random.randint(1, 9)
-        discount = np.random.choice([0.0, 0.1, 0.2, 0.3, 0.5], p=[0.5, 0.2, 0.15, 0.1, 0.05])
-        
-        sales = round(base_price * quantity * (1 - discount), 2)
-        # Margin erodes aggressively when high discounts are applied
-        profit_rate = np.random.uniform(0.15, 0.35) - (discount * 0.6)
-        profit = round(sales * profit_rate, 2)
-        
-        records.append({
-            "Order_Date": dates[i],
-            "Region": region,
-            "Category": cat,
-            "Sub_Category": sub_cat,
-            "Segment": segment,
-            "Ship_Mode": ship_mode,
-            "Sales": sales,
-            "Profit": profit,
-            "Discount": discount,
-            "Quantity": quantity
-        })
-        
-    df = pd.DataFrame(records)
-    df["Order_Date"] = pd.to_datetime(df["Order_Date"])
-    df["Year_Month"] = df["Order_Date"].dt.to_period("M").dt.to_timestamp()
-    return df
+# ============================================================
+# REPORTING YEAR FILTER
+# ============================================================
 
-df = generate_enterprise_data()
+available_years = sorted(
+    df["Order_Date"].dt.year.dropna().unique().tolist()
+)
 
-# 3. Dynamic Filter Panel
-st.sidebar.header("🎯 Filter Controls")
+selected_years = st.sidebar.multiselect(
+    "Reporting Years",
+    options=available_years,
+    default=available_years,
+    help="Select one or more years to analyze."
+)
 
-# Date range selection
 min_date = df["Order_Date"].min().date()
 max_date = df["Order_Date"].max().date()
-selected_date_range = st.sidebar.date_input(
-    "Select Order Date Window:",
+
+date_selection = st.sidebar.date_input(
+    "Reporting Period",
     value=(min_date, max_date),
     min_value=min_date,
     max_value=max_date
 )
 
-# Multi-select filters
-all_regions = sorted(df["Region"].unique().tolist())
-selected_regions = st.sidebar.multiselect("Regions:", options=all_regions, default=all_regions)
+regions = sorted(df["Region"].unique().tolist())
 
-all_segments = sorted(df["Segment"].unique().tolist())
-selected_segments = st.sidebar.multiselect("Customer Segments:", options=all_segments, default=all_segments)
+selected_regions = st.sidebar.multiselect(
+    "Region",
+    options=regions,
+    default=regions
+)
 
-all_categories = sorted(df["Category"].unique().tolist())
-selected_categories = st.sidebar.multiselect("Categories:", options=all_categories, default=all_categories)
+categories = sorted(df["Category"].unique().tolist())
 
-# Apply filters safely
-if isinstance(selected_date_range, tuple) and len(selected_date_range) == 2:
-    start_d, end_d = selected_date_range
+selected_categories = st.sidebar.multiselect(
+    "Product Category",
+    options=categories,
+    default=categories
+)
+
+if (
+    isinstance(date_selection, (tuple, list))
+    and len(date_selection) == 2
+):
+    start_date, end_date = date_selection
 else:
-    start_d, end_d = min_date, max_date
+    start_date, end_date = min_date, max_date
+
+
+# ============================================================
+# FILTER DATA
+# ============================================================
 
 filtered_df = df[
-    (df["Order_Date"].dt.date >= start_d) &
-    (df["Order_Date"].dt.date <= end_d) &
-    (df["Region"].isin(selected_regions)) &
-    (df["Segment"].isin(selected_segments)) &
+    (df["Order_Date"].dt.year.isin(selected_years))
+    &
+    (df["Order_Date"].dt.date >= start_date)
+    &
+    (df["Order_Date"].dt.date <= end_date)
+    &
+    (df["Region"].isin(selected_regions))
+    &
     (df["Category"].isin(selected_categories))
-]
-
-# 4. Top-Line KPI Scorecards with Period-over-Period Deltas
-st.subheader("📈 High-Level Executive Scorecards")
+].copy()
 
 if filtered_df.empty:
-    st.warning("⚠️ No data matches the selected filters. Please adjust the filters in the sidebar.")
-else:
-    total_sales = filtered_df["Sales"].sum()
-    total_profit = filtered_df["Profit"].sum()
-    total_orders = len(filtered_df)
-    profit_margin = (total_profit / total_sales * 100) if total_sales > 0 else 0
-    avg_order_value = total_sales / total_orders if total_orders > 0 else 0
+    st.warning("No data available for the selected filters.")
+    st.stop()
 
-    # Calculate MoM deltas using the latest two months in filtered data
-    monthly_trend = filtered_df.groupby("Year_Month")[["Sales", "Profit"]].sum().reset_index()
-    if len(monthly_trend) >= 2:
-        prev_month_sales = monthly_trend.iloc[-2]["Sales"]
-        curr_month_sales = monthly_trend.iloc[-1]["Sales"]
-        sales_delta = ((curr_month_sales - prev_month_sales) / prev_month_sales) * 100
 
-        prev_month_profit = monthly_trend.iloc[-2]["Profit"]
-        curr_month_profit = monthly_trend.iloc[-1]["Profit"]
-        profit_delta = ((curr_month_profit - prev_month_profit) / prev_month_profit) * 100
-        sales_delta_str = f"{sales_delta:+.1f}% MoM"
-        profit_delta_str = f"{profit_delta:+.1f}% MoM"
+# ============================================================
+# HEADER
+# ============================================================
+
+st.markdown(
+    """
+    <div class="dashboard-eyebrow">
+        GLOBAL SALES INTELLIGENCE / EXECUTIVE REPORTING
+    </div>
+
+    <div class="dashboard-title">
+        Executive Overview
+    </div>
+
+    <div class="dashboard-subtitle">
+        Monitor revenue, profitability, and business performance
+        across global markets.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# ============================================================
+# KPI CALCULATIONS
+# ============================================================
+
+total_revenue = filtered_df["Sales"].sum()
+total_profit = filtered_df["Profit"].sum()
+total_orders = filtered_df["Order_ID"].nunique()
+
+profit_margin = (
+    total_profit / total_revenue * 100
+    if total_revenue != 0
+    else 0
+)
+
+
+# ============================================================
+# PREVIOUS-PERIOD COMPARISON
+# ============================================================
+
+def calculate_change(current, previous):
+    if previous is None or previous == 0:
+        return None
+
+    return (current - previous) / abs(previous) * 100
+
+
+previous_df = pd.DataFrame()
+
+# Comparisons require consecutive selected years.
+years_are_consecutive = (
+    len(selected_years) > 0
+    and selected_years == list(
+        range(min(selected_years), max(selected_years) + 1)
+    )
+)
+
+if years_are_consecutive:
+
+    period_length = len(selected_years)
+
+    previous_years = list(
+        range(
+            min(selected_years) - period_length,
+            min(selected_years)
+        )
+    )
+
+    # Only compare when the entire previous period exists.
+    if set(previous_years).issubset(set(available_years)):
+
+        previous_df = df[
+            (df["Order_Date"].dt.year.isin(previous_years))
+            &
+            (df["Region"].isin(selected_regions))
+            &
+            (df["Category"].isin(selected_categories))
+        ].copy()
+
+        # Match the selected month/day window for a single-year
+        # comparison when both date inputs fall in that year.
+        if (
+            period_length == 1
+            and start_date.year == end_date.year
+            and start_date.year == selected_years[0]
+        ):
+            previous_df = previous_df[
+                (
+                    (previous_df["Order_Date"].dt.month * 100
+                     + previous_df["Order_Date"].dt.day)
+                    >= (start_date.month * 100 + start_date.day)
+                )
+                &
+                (
+                    (previous_df["Order_Date"].dt.month * 100
+                     + previous_df["Order_Date"].dt.day)
+                    <= (end_date.month * 100 + end_date.day)
+                )
+            ]
+
+
+revenue_change = None
+profit_change = None
+margin_change = None
+orders_change = None
+
+if not previous_df.empty:
+
+    previous_revenue = previous_df["Sales"].sum()
+    previous_profit = previous_df["Profit"].sum()
+    previous_orders = previous_df["Order_ID"].nunique()
+
+    previous_margin = (
+        previous_profit / previous_revenue * 100
+        if previous_revenue != 0
+        else None
+    )
+
+    revenue_change = calculate_change(
+        total_revenue, previous_revenue
+    )
+
+    profit_change = calculate_change(
+        total_profit, previous_profit
+    )
+
+    orders_change = calculate_change(
+        total_orders, previous_orders
+    )
+
+    if previous_margin is not None:
+        margin_change = profit_margin - previous_margin
+
+
+# ============================================================
+# KPI CARDS
+# ============================================================
+
+def kpi_card(label, value, footer, color, change=None, unit="%"):
+
+    if change is None:
+        comparison_text = "No prior-period data"
+        comparison_color = "#94A3B8"
     else:
-        sales_delta_str = "N/A"
-        profit_delta_str = "N/A"
-
-    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-    kpi1.metric("Total Revenue", f"${total_sales:,.2f}", delta=sales_delta_str)
-    kpi2.metric("Total Profit", f"${total_profit:,.2f}", delta=profit_delta_str)
-    kpi3.metric("Profit Margin", f"{profit_margin:.1f}%")
-    kpi4.metric("Average Order Value (AOV)", f"${avg_order_value:,.2f}")
-
-    st.divider()
-
-    # 5. Core Analytical Visualizations
-    row1_col1, row1_col2 = st.columns(2)
-
-    with row1_col1:
-        st.subheader("Monthly Revenue Trajectory")
-        trend_agg = filtered_df.groupby("Year_Month")["Sales"].sum().reset_index()
-        fig_trend = px.line(
-            trend_agg,
-            x="Year_Month",
-            y="Sales",
-            markers=True,
-            labels={"Year_Month": "Month", "Sales": "Revenue ($)"},
-            template="plotly_white"
+        arrow = "▲" if change >= 0 else "▼"
+        comparison_text = f"{arrow} {abs(change):.1f}{unit} vs prior period"
+        comparison_color = (
+            "#059669" if change >= 0 else "#DC2626"
         )
-        st.plotly_chart(fig_trend, use_container_width=True)
 
-    with row1_col2:
-        st.subheader("Profitability by Customer Segment")
-        segment_agg = filtered_df.groupby("Segment")[["Sales", "Profit"]].sum().reset_index()
-        fig_seg = px.bar(
-            segment_agg,
-            x="Segment",
-            y=["Sales", "Profit"],
-            barmode="group",
-            labels={"value": "Total ($)", "variable": "Financial Metric"},
-            template="plotly_white"
-        )
-        st.plotly_chart(fig_seg, use_container_width=True)
+    st.markdown(
+        f"""
+        <div class="kpi-card kpi-{color}">
+            <div class="kpi-label">{label}</div>
+            <div class="kpi-value">{value}</div>
+            <div class="kpi-footer">{footer}</div>
+            <div style="
+                margin-top:12px;
+                font-size:0.78rem;
+                font-weight:700;
+                color:{comparison_color};
+            ">
+                {comparison_text}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-    row2_col1, row2_col2 = st.columns(2)
+k1, k2, k3, k4 = st.columns(4)
 
-    with row2_col1:
-        st.subheader("Discount vs. Profit Erosion Diagnostic")
-        fig_scatter = px.scatter(
-            filtered_df,
-            x="Discount",
-            y="Profit",
-            color="Category",
-            size="Quantity",
-            hover_data=["Sub_Category", "Region"],
-            labels={"Discount": "Discount Rate (0.0 = 0%, 0.5 = 50%)", "Profit": "Net Profit ($)"},
-            template="plotly_white"
-        )
-        st.plotly_chart(fig_scatter, use_container_width=True)
+with k1:
+    kpi_card(
+        "Total Revenue",
+        f"${total_revenue:,.0f}",
+        "Gross sales generated",
+        "indigo",
+        revenue_change
+    )
 
-    with row2_col2:
-        st.subheader("Sub-Category Performance Breakdown")
-        subcat_agg = filtered_df.groupby("Sub_Category")["Sales"].sum().sort_values(ascending=True).reset_index()
-        fig_subcat = px.bar(
-            subcat_agg,
-            x="Sales",
-            y="Sub_Category",
+with k2:
+    kpi_card(
+        "Total Profit",
+        f"${total_profit:,.0f}",
+        "Reported transaction profit",
+        "green",
+        profit_change
+    )
+
+with k3:
+    kpi_card(
+        "Profit Margin",
+        f"{profit_margin:.2f}%",
+        "Profit as a share of revenue",
+        "violet",
+        margin_change,
+        unit=" pp"
+    )
+
+with k4:
+    kpi_card(
+        "Total Orders",
+        f"{total_orders:,}",
+        "Unique customer orders",
+        "sky",
+        orders_change
+    )
+
+st.write("")
+st.write("")
+
+
+# ============================================================
+# MONTHLY PERFORMANCE
+# ============================================================
+
+monthly = (
+    filtered_df
+    .groupby("Year_Month", as_index=False)
+    [["Sales", "Profit"]]
+    .sum()
+)
+
+monthly = monthly.rename(
+    columns={
+        "Sales": "Revenue",
+        "Profit": "Profit"
+    }
+)
+
+
+# ============================================================
+# CHART ROW 1
+# ============================================================
+
+left, right = st.columns([3, 2])
+
+with left:
+
+    st.subheader("Revenue & Profit Trends")
+
+    fig_line = px.line(
+        monthly,
+        x="Year_Month",
+        y=["Revenue", "Profit"],
+        markers=True,
+        color_discrete_sequence=[
+            "#4F46E5",
+            "#10B981"
+        ],
+        labels={
+            "Year_Month": "Month",
+            "value": "Amount ($)",
+            "variable": "Metric"
+        }
+    )
+
+    fig_line.update_layout(
+        height=400,
+        margin=dict(l=20, r=20, t=30, b=20),
+        hovermode="x unified",
+        legend_title_text="",
+        plot_bgcolor="white",
+        paper_bgcolor="white"
+    )
+
+    st.plotly_chart(
+        fig_line,
+        use_container_width=True
+    )
+
+
+with right:
+
+    st.subheader("Revenue Composition")
+
+    category_data = (
+        filtered_df
+        .groupby("Category", as_index=False)["Sales"]
+        .sum()
+    )
+
+    fig_donut = px.pie(
+        category_data,
+        values="Sales",
+        names="Category",
+        hole=0.62,
+        color_discrete_sequence=[
+            "#4F46E5",
+            "#8B5CF6",
+            "#A5B4FC"
+        ]
+    )
+
+    fig_donut.update_layout(
+        height=400,
+        margin=dict(l=20, r=20, t=30, b=20),
+        paper_bgcolor="white",
+        legend=dict(
             orientation="h",
-            labels={"Sales": "Total Revenue ($)", "Sub_Category": "Sub-Category"},
-            template="plotly_white"
-        )
-        st.plotly_chart(fig_subcat, use_container_width=True)
+            y=-0.1
+        ),
+        annotations=[
+            dict(
+                text="REVENUE MIX",
+                x=0.5,
+                y=0.5,
+                font=dict(
+                    size=13,
+                    color="#64748B"
+                ),
+                showarrow=False
+            )
+        ]
+    )
+
+    st.plotly_chart(
+        fig_donut,
+        use_container_width=True
+    )
+
+
+# ============================================================
+# REGIONAL PERFORMANCE
+# ============================================================
+
+st.write("")
+
+st.subheader("Geographic Revenue Performance")
+
+regional = (
+    filtered_df
+    .groupby("Region", as_index=False)["Sales"]
+    .sum()
+    .sort_values("Sales", ascending=True)
+)
+
+fig_region = px.bar(
+    regional,
+    x="Sales",
+    y="Region",
+    orientation="h",
+    color_discrete_sequence=["#6366F1"],
+    labels={
+        "Sales": "Revenue ($)",
+        "Region": "Region"
+    }
+)
+
+fig_region.update_layout(
+    height=340,
+    margin=dict(l=20, r=20, t=20, b=20),
+    plot_bgcolor="white",
+    paper_bgcolor="white"
+)
+
+st.plotly_chart(
+    fig_region,
+    use_container_width=True
+)
+
+
+# ============================================================
+# EXECUTIVE INSIGHTS
+# ============================================================
+
+st.write("")
+st.subheader("Executive Insights")
+
+top_category = (
+    category_data
+    .sort_values("Sales", ascending=False)
+    .iloc[0]["Category"]
+)
+
+top_region = (
+    regional
+    .sort_values("Sales", ascending=False)
+    .iloc[0]["Region"]
+)
+
+profit_status = (
+    "positive profitability"
+    if total_profit >= 0
+    else "negative profitability"
+)
+
+i1, i2, i3 = st.columns(3)
+
+with i1:
+    st.markdown(
+        f"""
+        <div class="insight-card">
+            <div class="insight-title">Revenue Leader</div>
+            <div class="insight-body">
+                {top_category} contributes the highest revenue
+                among product categories.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with i2:
+    st.markdown(
+        f"""
+        <div class="insight-card">
+            <div class="insight-title">Top Performing Region</div>
+            <div class="insight-body">
+                {top_region} generates the highest sales
+                in the selected reporting period.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with i3:
+    st.markdown(
+        f"""
+        <div class="insight-card">
+            <div class="insight-title">Profitability Health</div>
+            <div class="insight-body">
+                The business reports {profit_status},
+                with an overall profit margin of
+                {profit_margin:.2f}%.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+# ============================================================
+# FOOTER
+# ============================================================
+
+st.divider()
+
+st.caption(
+    "ATLAS ANALYTICS | Global Superstore Dataset | "
+    "Historical Reporting: 2011–2014"
+)
