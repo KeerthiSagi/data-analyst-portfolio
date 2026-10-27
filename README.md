@@ -1,4 +1,4 @@
-📊 Data Analytics & Business Intelligence Portfolio
+📊 **Data Analytics & Business Intelligence Portfolio**
 
 Keerthi Varma Sagi
 
@@ -12,11 +12,11 @@ Tech Stack: Python · SQL · Pandas · NumPy · Streamlit · Plotly · Power BI 
 
 🚀 Projects
 
-📈 Project 1 — ATLAS Analytics
+**📈 Project 1 — ATLAS Analytics
 
 Executive Sales Intelligence Dashboard
 
-🌐 [Live Dashboard](https://data-analyst-portfolio-2ghndjjwefjs6maayxh7gh.streamlit.app/)
+🌐 [Live Dashboard](https://data-analyst-portfolio-2ghndjjwefjs6maayxh7gh.streamlit.app/)**
 
 An interactive business intelligence dashboard analyzing sales performance, profitability, customer segments, regional trends, and shipping operations using the Global Superstore dataset.
 
