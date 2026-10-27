@@ -1,4 +1,4 @@
-📊 **Data Analytics & Business Intelligence Portfolio**
+# 📊 Data Analytics & Business Intelligence Portfolio
 
 Keerthi Varma Sagi
 
@@ -8,15 +8,15 @@ A portfolio of three Python-based analytics projects demonstrating business inte
 
 Tech Stack: Python · SQL · Pandas · NumPy · Streamlit · Plotly · Power BI · Excel
 
-⸻
+___
 
-🚀 Projects
+# 🚀 Projects
 
-**📈 Project 1 — ATLAS Analytics
+## 📈 Project 1 — ATLAS Analytics
 
-Executive Sales Intelligence Dashboard
+### Executive Sales Intelligence Dashboard
 
-🌐 [Live Dashboard](https://data-analyst-portfolio-2ghndjjwefjs6maayxh7gh.streamlit.app/)**
+🌐 Live Dashboard : https://data-analyst-portfolio-2ghndjjwefjs6maayxh7gh.streamlit.app/
 
 An interactive business intelligence dashboard analyzing sales performance, profitability, customer segments, regional trends, and shipping operations using the Global Superstore dataset.
 
@@ -33,13 +33,11 @@ Dataset: 51,290 order line items | 25,035 unique orders | 2011–2014
 
 Tech: Python · Pandas · Streamlit · Plotly · NumPy · Excel
 
-Dashboard Preview
+___
 
-⸻
+## 🔍 Project 2 — Metric Drop Root Cause Analyzer
 
-🔍 Project 2 — Metric Drop Root Cause Analyzer
-
-File: app_root_cause.py
+🌐 Live Dashboard : https://data-analyst-portfolio-ykkappqtyzqqjeghsd7xmz8.streamlit.app/
 
 An interactive analytical demonstration designed to investigate sudden changes in business performance metrics.
 
@@ -52,13 +50,11 @@ What it does:
 
 Tech: Python · Streamlit · Pandas
 
-Status: Portfolio demo
+___
 
-⸻
+## 🧹 Project 3 — Automated Data Cleaning Engine
 
-🧹 Project 3 — Automated Data Cleaning Engine
-
-File: app_data_cleaner.py
+🌐 Live Dashboard: (https://data-analyst-portfolio-a2baphz2hglshyzwp8euiv.streamlit.app/)
 
 A Python-based data preparation application that helps users inspect, clean, and export datasets.
 
@@ -71,9 +67,7 @@ What it does:
 
 Tech: Python · Pandas · Streamlit
 
-Status: Portfolio demo
-
-⸻
+___
 
 📁 Repository Structure
 
@@ -93,7 +87,7 @@ data-analyst-portfolio/
 ├── requirements.txt
 └── README.md
 
-⸻
+___
 
 🛠️ Technologies
 
@@ -105,23 +99,4 @@ Visualization	Plotly, Streamlit
 Testing	Python unittest
 Deployment	Streamlit Community Cloud, GitHub
 
-⸻
-
-🌐 Live Applications
-
-Project	Application
-ATLAS Analytics	Launch Dashboard
-Metric Drop Root Cause Analyzer	Portfolio demo
-Automated Data Cleaning Engine	Portfolio demo
-
-⸻
-
-👩‍💻 About Me
-
-Keerthi Varma Sagi
-
-MS Computer Science | Wichita State University
-
-Interested in Data Analytics, Business Intelligence, and building practical data-driven solutions using Python, SQL, and Power BI.
-
-GitHub: KeerthiSagi
+___
