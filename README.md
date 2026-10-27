@@ -69,24 +69,25 @@ Tech: Python · Pandas · Streamlit
 
 ___
 
-📁 Repository Structure
+## 📁 Repository Structure
 
+```text
 data-analyst-portfolio/
 │
-├── app_kpi_dashboard.py       # Project 1 — ATLAS Analytics
-├── app_root_cause.py          # Project 2 — Root Cause Analyzer
-├── app_data_cleaner.py        # Project 3 — Data Cleaning Engine
+├── app_kpi_dashboard.py    # Project 1 — ATLAS Analytics
+├── app_root_cause.py       # Project 2 — Root Cause Analyzer
+├── app_data_cleaner.py     # Project 3 — Data Cleaning Engine
 │
-├── pages/                     # Dashboard pages
-├── utils/                     # Analytics and utility functions
-├── data/                      # Dataset
-├── tests/                     # Automated tests
-├── docs/screenshots/          # Dashboard screenshots
-├── .streamlit/                # Streamlit configuration
+├── pages/                  # Dashboard pages
+├── utils/                  # Analytics and utility functions
+├── data/                   # Dataset
+├── tests/                  # Automated tests
+├── docs/screenshots/       # Dashboard screenshots
+├── .streamlit/             # Streamlit configuration
 │
 ├── requirements.txt
 └── README.md
-
+```
 ___
 
 🛠️ Technologies
