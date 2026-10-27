@@ -16,7 +16,7 @@ Tech Stack: Python · SQL · Pandas · NumPy · Streamlit · Plotly · Power BI 
 
 Executive Sales Intelligence Dashboard
 
-🌐 Live Dashboard · 📂 Source Code
+🌐 [Live Dashboard](https://data-analyst-portfolio-2ghndjjwefjs6maayxh7gh.streamlit.app/)
 
 An interactive business intelligence dashboard analyzing sales performance, profitability, customer segments, regional trends, and shipping operations using the Global Superstore dataset.
 
