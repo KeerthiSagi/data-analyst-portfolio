@@ -2,7 +2,7 @@
 
 Streamlit demo that walks through a sudden drop in checkout conversion using synthetic incident data by device, OS, and traffic source.
 
-**Live app:** https://data-analyst-portfolio-ykkappqtyzqqjeghsd7xmz8.streamlit.app/
+**Live app:** https://data-analyst-portfolio-yictmcakk4rypw8ulkd85s.streamlit.app/
 
 ## Run locally
 

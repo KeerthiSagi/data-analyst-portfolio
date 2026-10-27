@@ -2,7 +2,7 @@
 
 Streamlit app for uploading a CSV, profiling missing values and duplicates, applying basic cleaning steps, and downloading a cleaned file.
 
-**Live app:** https://data-analyst-portfolio-a2baphz2hglshyzwp8euiv.streamlit.app/
+**Live app:** https://data-analyst-portfolio-fbu8nnzddmgchaadmjmc8q.streamlit.app/
 
 ## Run locally
 

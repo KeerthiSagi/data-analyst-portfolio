@@ -16,7 +16,7 @@ Three Python Streamlit projects covering executive BI, diagnostic analysis, and 
 
 **Executive Sales Intelligence Dashboard**
 
-Live: https://data-analyst-portfolio-2ghndjjwefjs6maayxh7gh.streamlit.app/
+Live: https://data-analyst-portfolio-onoez34kn8frqtuwvybao8.streamlit.app/
 
 Folder: [`project1-atlas-analytics/`](project1-atlas-analytics/)
 
@@ -28,7 +28,7 @@ Interactive BI dashboard on the Global Superstore dataset: executive KPIs, custo
 
 ### Project 2 — Metric Drop Root Cause Analyzer
 
-Live: https://data-analyst-portfolio-ykkappqtyzqqjeghsd7xmz8.streamlit.app/
+Live: https://data-analyst-portfolio-yictmcakk4rypw8ulkd85s.streamlit.app/
 
 Folder: [`project2-root-cause-analyzer/`](project2-root-cause-analyzer/)
 
@@ -40,7 +40,7 @@ Scenario tool for investigating a checkout conversion drop across device, OS, an
 
 ### Project 3 — Automated Data Cleaning Engine
 
-Live: https://data-analyst-portfolio-a2baphz2hglshyzwp8euiv.streamlit.app/
+Live: https://data-analyst-portfolio-fbu8nnzddmgchaadmjmc8q.streamlit.app/
 
 Folder: [`project3-data-cleaning-engine/`](project3-data-cleaning-engine/)
 

@@ -2,7 +2,7 @@
 
 Interactive Streamlit dashboard for Global Superstore sales, profitability, customer segments, regional performance, and shipping logistics.
 
-**Live app:** https://data-analyst-portfolio-2ghndjjwefjs6maayxh7gh.streamlit.app/
+**Live app:** https://data-analyst-portfolio-onoez34kn8frqtuwvybao8.streamlit.app/
 
 ## Features
 
