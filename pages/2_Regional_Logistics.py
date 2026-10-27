@@ -5,6 +5,25 @@ import streamlit as st
 
 from utils.data_loader import load_superstore_data
 from utils.kpi_metrics import format_exact_currency, format_headline_currency
+from utils.logistics_analytics import (
+    REGION_SHIP_METRICS,
+    SHIP_MODE_METRICS,
+    TREND_METRICS as LOGISTICS_TREND_METRICS,
+    aggregate_processing_time,
+    aggregate_regional_shipping_cost,
+    aggregate_shipping_modes,
+    aggregate_shipping_trends,
+    build_cost_margin_scatter,
+    build_processing_by_mode,
+    build_processing_distribution,
+    build_regional_shipping_chart,
+    build_shipping_mode_chart,
+    build_shipping_trend,
+    calculate_logistics_kpis,
+    filter_shipping_modes,
+    generate_logistics_insights,
+    processing_caption,
+)
 from utils.regional_analytics import (
     DEFAULT_TREND_REGIONS,
     METRIC_SPECS,
@@ -23,11 +42,18 @@ from utils.regional_analytics import (
     profitability_highlights,
     trend_caption,
 )
-from utils.theme import initialize_theme
+from utils.navigation import (
+    render_page_header,
+    render_project_nav,
+    render_section_header,
+    render_section_nav,
+    render_sidebar_brand,
+)
+from utils.theme import PLOTLY_CONFIG, initialize_theme
 
 
 st.set_page_config(
-    page_title="Regional Performance Intelligence | Atlas Analytics",
+    page_title="Regional Performance | Atlas Analytics",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -41,6 +67,9 @@ df = load_superstore_data()
 # ============================================================
 # SIDEBAR FILTERS
 # ============================================================
+
+render_sidebar_brand()
+render_project_nav("regional")
 
 st.sidebar.markdown("### Report Filters")
 
@@ -88,20 +117,19 @@ filtered = filter_orders(
 # HEADER
 # ============================================================
 
-st.markdown(
-    """
-    <div class="dashboard-eyebrow">
-        GEOGRAPHIC INTELLIGENCE / REGIONAL REPORTING
-    </div>
-    <div class="dashboard-title">
-        Regional Performance Intelligence
-    </div>
-    <div class="dashboard-subtitle">
-        Revenue, profitability, and commercial performance
-        across global business regions.
-    </div>
-    """,
-    unsafe_allow_html=True,
+render_page_header(
+    eyebrow="GEOGRAPHIC INTELLIGENCE / REGIONAL REPORTING",
+    title="Regional Performance Intelligence",
+    subtitle=(
+        "Revenue, profitability, and commercial performance across global "
+        "business regions, plus shipping and logistics intelligence."
+    ),
+)
+render_section_nav(
+    [
+        ("regional-performance", "Regional Performance"),
+        ("shipping-logistics", "Shipping & Logistics"),
+    ]
 )
 
 if filtered.empty:
@@ -137,7 +165,7 @@ def exact_title(label, value):
 
 def render_kpi_card(column, *, card_key, label, value, value_title, footer):
     with column:
-        with st.container(border=True, key=card_key, height="stretch", gap="xxsmall"):
+        with st.container(border=True, key=card_key, gap="xxsmall"):
             st.markdown(
                 f"""
                 <div class="kpi-card-body">
@@ -154,7 +182,13 @@ def render_chart(figure, empty_message, chart_key):
     if figure is None:
         st.info(empty_message)
         return
-    st.plotly_chart(figure, width="stretch", theme=None, key=chart_key)
+    st.plotly_chart(
+        figure,
+        width="stretch",
+        theme=None,
+        config=PLOTLY_CONFIG,
+        key=chart_key,
+    )
 
 
 def selected_metric(label, options, default, widget_key):
@@ -172,6 +206,13 @@ def selected_metric(label, options, default, widget_key):
 # ============================================================
 # KPI CARDS
 # ============================================================
+
+render_section_header(
+    anchor="regional-performance",
+    eyebrow="REGIONAL PERFORMANCE",
+    title="Regional commercial results",
+    caption="Page filters apply to every regional view below.",
+)
 
 cards = st.columns(4, gap="small", wrap=True)
 render_kpi_card(
@@ -393,6 +434,199 @@ st.dataframe(
         "Order Line Items": st.column_config.NumberColumn(format="%,d"),
     },
 )
+
+st.write("")
+
+
+# ============================================================
+# SHIPPING & LOGISTICS INTELLIGENCE
+# ============================================================
+
+render_section_header(
+    anchor="shipping-logistics",
+    eyebrow="SHIPPING & LOGISTICS INTELLIGENCE",
+    title="Shipping Cost, Mode Performance, and Order-to-Shipment Processing",
+    caption=(
+        "Logistics metrics use the same page filters above. "
+        "Order-to-shipment days are Ship Date minus Order Date — processing time until "
+        "shipment, not delivery time to the customer. Shipping cost is not subtracted "
+        "from recorded profit."
+    ),
+)
+
+ship_modes = sorted(filtered["Ship_Mode"].dropna().unique().tolist()) if "Ship_Mode" in filtered.columns else []
+selected_ship_modes = st.multiselect(
+    "Shipping Mode (logistics section only)",
+    options=ship_modes,
+    default=ship_modes,
+    help="Scopes only the Shipping & Logistics sections. Page-wide regional analytics stay unchanged.",
+)
+logistics_df = filter_shipping_modes(filtered, selected_ship_modes)
+
+if logistics_df.empty:
+    st.warning("No logistics data available for the selected shipping modes.")
+else:
+    logistics_kpis = calculate_logistics_kpis(logistics_df)
+    shipping_modes = aggregate_shipping_modes(logistics_df)
+    regional_shipping = aggregate_regional_shipping_cost(logistics_df)
+    processing = aggregate_processing_time(logistics_df)
+    shipping_trends = aggregate_shipping_trends(logistics_df, start_date, end_date)
+    logistics_insights = generate_logistics_insights(
+        shipping_modes,
+        regional_shipping,
+        logistics_kpis,
+    )
+
+    def display_days(value):
+        if value is None or pd.isna(value):
+            return "Unavailable"
+        return f"{float(value):.2f}"
+
+    def display_rate(value):
+        if value is None or pd.isna(value):
+            return "Unavailable"
+        return f"{float(value):.1f}%"
+
+    logistics_cards = st.columns(4, gap="small", wrap=True)
+    render_kpi_card(
+        logistics_cards[0],
+        card_key="kpi_ship_cost",
+        label="Total Shipping Cost",
+        value=display_currency(logistics_kpis["shipping_cost"]),
+        value_title=exact_title("Exact shipping cost", logistics_kpis["shipping_cost"]),
+        footer="Sum of Shipping_Cost in the logistics view",
+    )
+    render_kpi_card(
+        logistics_cards[1],
+        card_key="kpi_ship_ratio",
+        label="Shipping Cost Ratio",
+        value=display_margin(logistics_kpis["shipping_cost_ratio"]),
+        value_title="Shipping cost divided by revenue",
+        footer="Shipping cost as a share of revenue",
+    )
+    render_kpi_card(
+        logistics_cards[2],
+        card_key="kpi_ship_days",
+        label="Avg Order-to-Shipment Days",
+        value=display_days(logistics_kpis["avg_processing_days"]),
+        value_title="Mean days per valid order line item",
+        footer="Mean days per valid line item",
+    )
+    render_kpi_card(
+        logistics_cards[3],
+        card_key="kpi_same_day",
+        label="Same-Day Shipment Rate",
+        value=display_rate(logistics_kpis["same_day_rate"]),
+        value_title="Share of valid line items shipped the same day",
+        footer="Line items where Ship Date equals Order Date",
+    )
+
+    st.write("")
+    st.subheader("Shipping Mode Performance")
+    mode_metric = selected_metric(
+        "Shipping mode metric",
+        options=list(SHIP_MODE_METRICS),
+        default="Shipping Cost",
+        widget_key="logistics_mode_metric",
+    )
+    st.caption(
+        "Modes differ in order mix and basket size. "
+        "A higher shipping cost does not by itself mean weaker profitability."
+    )
+    render_chart(
+        build_shipping_mode_chart(shipping_modes, mode_metric),
+        "No shipping-mode values are available for this metric.",
+        "logistics_mode_chart",
+    )
+
+    st.write("")
+    ship_left, ship_right = st.columns(2, gap="medium", wrap=True)
+    with ship_left:
+        st.subheader("Regional Shipping Cost Analysis")
+        region_ship_metric = selected_metric(
+            "Regional shipping metric",
+            options=list(REGION_SHIP_METRICS),
+            default="Total Shipping Cost",
+            widget_key="logistics_region_metric",
+        )
+        st.caption(
+            "Total shipping cost reflects volume. Shipping cost ratio shows shipping "
+            "expense relative to revenue. The ratio is not a profitability measure."
+        )
+        render_chart(
+            build_regional_shipping_chart(regional_shipping, region_ship_metric),
+            "Regional shipping values are unavailable for this selection.",
+            "logistics_region_chart",
+        )
+    with ship_right:
+        st.subheader("Shipping Cost & Profitability")
+        st.caption(
+            "Observed association between shipping cost ratio and profit margin by mode. "
+            "Shipping cost is not subtracted from recorded profit, and the chart does not "
+            "imply causation."
+        )
+        render_chart(
+            build_cost_margin_scatter(shipping_modes),
+            "Cost and margin comparison is unavailable for this selection.",
+            "logistics_scatter_chart",
+        )
+
+    st.write("")
+    st.subheader("Order-to-Shipment Processing Time")
+    st.caption(processing_caption(processing))
+    process_left, process_right = st.columns(2, gap="medium", wrap=True)
+    with process_left:
+        render_chart(
+            build_processing_by_mode(processing["by_mode"]),
+            "Average processing days are unavailable for this selection.",
+            "logistics_processing_mode_chart",
+        )
+    with process_right:
+        render_chart(
+            build_processing_distribution(processing["distribution"]),
+            "Processing-time distribution is unavailable for this selection.",
+            "logistics_processing_dist_chart",
+        )
+    if logistics_kpis["median_processing_days"] is not None:
+        st.caption(
+            f"Median order-to-shipment days: {logistics_kpis['median_processing_days']:.2f} "
+            f"across {logistics_kpis['valid_intervals']:,} valid line items."
+        )
+
+    st.write("")
+    st.subheader("Shipping & Logistics Trends")
+    logistics_trend_metric = selected_metric(
+        "Logistics trend metric",
+        options=list(LOGISTICS_TREND_METRICS),
+        default="Total Shipping Cost",
+        widget_key="logistics_trend_metric",
+    )
+    st.caption(
+        f"{str(shipping_trends['grain'].iloc[0]).capitalize()} totals for the selected "
+        "reporting period. Shipping cost ratio uses aggregated cost divided by aggregated "
+        "revenue. Average processing days use valid line-item intervals only."
+    )
+    render_chart(
+        build_shipping_trend(shipping_trends, logistics_trend_metric),
+        "No logistics trend values are available for this metric.",
+        "logistics_trend_chart",
+    )
+
+    st.write("")
+    st.subheader("Logistics Business Insights")
+    if logistics_insights:
+        logistics_insight_columns = st.columns(min(len(logistics_insights), 2), gap="small", wrap=True)
+        for index, note in enumerate(logistics_insights):
+            with logistics_insight_columns[index % 2]:
+                st.markdown(
+                    f"""
+                    <div class="insight-card">
+                        <div class="insight-title">{html.escape(note["title"])}</div>
+                        <div class="insight-body">{html.escape(note["body"])}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
 st.divider()
 st.caption(

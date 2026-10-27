@@ -587,17 +587,25 @@ def _ranked_bar(performance, column, color, kind, axis_title, color_by_region=Fa
             )
         ]
     )
-    height = min(560, max(280, 34 * len(plot_df) + 90))
+    count = len(plot_df)
+    if count <= 3:
+        height, bargap = 260, 0.68
+    elif count <= 6:
+        height, bargap = max(300, 44 * count + 90), 0.42
+    else:
+        height, bargap = min(560, max(340, 36 * count + 100)), 0.24
     figure.update_layout(
         height=height,
-        margin=dict(l=8, r=16, t=8, b=8),
+        margin=dict(l=72, r=36, t=24, b=56, pad=4),
         paper_bgcolor="white",
         plot_bgcolor="white",
         showlegend=False,
-        bargap=0.28,
+        bargap=bargap,
         font=dict(family="Source Sans Pro, sans-serif", color="#0F172A", size=13),
+        hoverlabel=dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0", font=dict(size=12), align="left"),
     )
     value_axis = _currency_axis(axis_title) if kind == "currency" else _percent_axis(axis_title)
+    value_axis = {**value_axis, "automargin": True}
     figure.update_yaxes(
         categoryorder="array",
         categoryarray=plot_df["region"].tolist(),
@@ -654,10 +662,11 @@ def _overall_margin(performance: pd.DataFrame):
 def _chart_layout(height: int) -> dict:
     return dict(
         height=height,
-        margin=dict(l=8, r=16, t=36, b=8),
+        margin=dict(l=56, r=28, t=48, b=64, pad=4),
         paper_bgcolor="white",
         plot_bgcolor="white",
         font=dict(family="Source Sans Pro, sans-serif", color="#0F172A", size=13),
+        hoverlabel=dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0", font=dict(size=12), align="left"),
     )
 
 

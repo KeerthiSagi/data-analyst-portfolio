@@ -3,7 +3,8 @@ import html
 import streamlit as st
 import pandas as pd
 
-from utils.theme import initialize_theme
+from utils.navigation import render_page_header, render_project_nav, render_sidebar_brand
+from utils.theme import PLOTLY_CONFIG, initialize_theme
 from utils.data_loader import load_superstore_data
 from utils.kpi_metrics import (
     aggregate_kpi_trends,
@@ -55,26 +56,8 @@ df = load_superstore_data()
 # SIDEBAR
 # ============================================================
 
-st.sidebar.markdown(
-    """
-    <div style="
-        font-size:1.15rem;
-        font-weight:800;
-        color:#4F46E5;
-        margin-bottom:5px;
-    ">
-        ◈ ATLAS ANALYTICS
-    </div>
-    <div style="
-        color:#64748B;
-        font-size:0.8rem;
-        margin-bottom:25px;
-    ">
-        Global Sales Intelligence
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+render_sidebar_brand()
+render_project_nav("executive")
 
 st.sidebar.markdown("### Report Filters")
 
@@ -136,22 +119,13 @@ if filtered_df.empty:
 # HEADER
 # ============================================================
 
-st.markdown(
-    """
-    <div class="dashboard-eyebrow">
-        GLOBAL SALES INTELLIGENCE / EXECUTIVE REPORTING
-    </div>
-
-    <div class="dashboard-title">
-        Executive Overview
-    </div>
-
-    <div class="dashboard-subtitle">
-        Monitor revenue, profitability, and business performance
-        across global markets.
-    </div>
-    """,
-    unsafe_allow_html=True
+render_page_header(
+    eyebrow="GLOBAL SALES INTELLIGENCE / EXECUTIVE REPORTING",
+    title="Executive Overview",
+    subtitle=(
+        "Monitor revenue, profitability, and business performance "
+        "across global markets."
+    ),
 )
 
 
@@ -277,7 +251,7 @@ def render_kpi_card(
     """Premium KPI card: metric, prior-period comparison, and sparkline."""
 
     with column:
-        with st.container(border=True, key=card_key, height="stretch", gap="xxsmall"):
+        with st.container(border=True, key=card_key, gap="xxsmall"):
             st.markdown(
                 f"""
                 <div class="kpi-card-body kpi-{accent}">
@@ -438,6 +412,7 @@ def render_chart(figure, empty_message, chart_key):
         figure,
         width="stretch",
         theme=None,
+        config=PLOTLY_CONFIG,
         key=chart_key,
     )
 

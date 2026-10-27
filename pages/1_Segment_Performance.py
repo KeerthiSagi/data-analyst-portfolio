@@ -26,11 +26,12 @@ from utils.segment_analytics import (
     profitability_highlights,
     trend_caption,
 )
-from utils.theme import initialize_theme
+from utils.navigation import render_page_header, render_project_nav, render_sidebar_brand
+from utils.theme import PLOTLY_CONFIG, initialize_theme
 
 
 st.set_page_config(
-    page_title="Customer Segment Intelligence | Atlas Analytics",
+    page_title="Segment Performance | Atlas Analytics",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -44,6 +45,9 @@ df = load_superstore_data()
 # ============================================================
 # SIDEBAR FILTERS
 # ============================================================
+
+render_sidebar_brand()
+render_project_nav("segment")
 
 st.sidebar.markdown("### Report Filters")
 
@@ -91,20 +95,13 @@ filtered = filter_orders(
 # HEADER
 # ============================================================
 
-st.markdown(
-    """
-    <div class="dashboard-eyebrow">
-        CUSTOMER INTELLIGENCE / SEGMENT REPORTING
-    </div>
-    <div class="dashboard-title">
-        Customer Segment Intelligence
-    </div>
-    <div class="dashboard-subtitle">
-        Revenue, profitability, and purchasing behavior
-        across customer segments.
-    </div>
-    """,
-    unsafe_allow_html=True,
+render_page_header(
+    eyebrow="CUSTOMER INTELLIGENCE / SEGMENT REPORTING",
+    title="Customer Segment Intelligence",
+    subtitle=(
+        "Revenue, profitability, and purchasing behavior "
+        "across customer segments."
+    ),
 )
 
 if filtered.empty:
@@ -139,7 +136,7 @@ def exact_title(label, value):
 
 def render_kpi_card(column, *, card_key, label, value, value_title, footer):
     with column:
-        with st.container(border=True, key=card_key, height="stretch", gap="xxsmall"):
+        with st.container(border=True, key=card_key, gap="xxsmall"):
             st.markdown(
                 f"""
                 <div class="kpi-card-body">
@@ -156,7 +153,13 @@ def render_chart(figure, empty_message, chart_key):
     if figure is None:
         st.info(empty_message)
         return
-    st.plotly_chart(figure, width="stretch", theme=None, key=chart_key)
+    st.plotly_chart(
+        figure,
+        width="stretch",
+        theme=None,
+        config=PLOTLY_CONFIG,
+        key=chart_key,
+    )
 
 
 def selected_metric(label, options, default, widget_key):

@@ -196,19 +196,22 @@ def build_trend_figure(trends, selection: str):
             figure.update_layout(yaxis=_currency_axis(selection), showlegend=False, hovermode="closest")
 
     figure.update_layout(
-        height=420,
-        margin=dict(l=8, r=8, t=36, b=8),
+        height=380,
+        margin=dict(l=48, r=28, t=48, b=64, pad=4),
         paper_bgcolor="white",
         plot_bgcolor="white",
         font=dict(family="Source Sans Pro, sans-serif", color="#0F172A", size=13),
+        hoverlabel=dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0", font=dict(size=12), align="left"),
     )
     figure.update_xaxes(
         type="date",
         showgrid=False,
         title=None,
+        automargin=True,
         tickformat=_tickformat(trends.frequency),
         hoverformat="%b %d, %Y",
     )
+    figure.update_yaxes(automargin=True)
     return figure
 
 
@@ -231,6 +234,7 @@ def build_performance_bar(summary: pd.DataFrame, metric: str, orientation: str):
     names = plot_df["name"].tolist()
     values = plot_df[column].tolist()
 
+    count = len(plot_df)
     if orientation == "h":
         trace = go.Bar(
             y=names,
@@ -240,8 +244,14 @@ def build_performance_bar(summary: pd.DataFrame, metric: str, orientation: str):
             hovertext=hover,
             hovertemplate="%{hovertext}<extra></extra>",
         )
-        height = min(680, max(320, 42 * len(plot_df) + 70))
+        if count <= 3:
+            height, bargap = 260, 0.68
+        elif count <= 6:
+            height, bargap = max(300, 44 * count + 90), 0.42
+        else:
+            height, bargap = min(560, max(340, 36 * count + 100)), 0.24
         value_axis = "x"
+        margins = dict(l=72, r=36, t=24, b=56, pad=4)
     else:
         trace = go.Bar(
             x=names,
@@ -250,18 +260,21 @@ def build_performance_bar(summary: pd.DataFrame, metric: str, orientation: str):
             hovertext=hover,
             hovertemplate="%{hovertext}<extra></extra>",
         )
-        height = 380
+        height = 280 if count <= 3 else 320 if count <= 6 else 360
+        bargap = 0.62 if count <= 3 else 0.42 if count <= 6 else 0.3
         value_axis = "y"
+        margins = dict(l=48, r=28, t=24, b=72, pad=4)
 
     figure = go.Figure(data=[trace])
     figure.update_layout(
         height=height,
-        margin=dict(l=8, r=16, t=8, b=8),
+        margin=margins,
         paper_bgcolor="white",
         plot_bgcolor="white",
         showlegend=False,
-        bargap=0.28,
+        bargap=bargap,
         font=dict(family="Source Sans Pro, sans-serif", color="#0F172A", size=13),
+        hoverlabel=dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0", font=dict(size=12), align="left"),
     )
     category_axis = dict(
         categoryorder="array",
@@ -269,12 +282,14 @@ def build_performance_bar(summary: pd.DataFrame, metric: str, orientation: str):
         title=None,
         showgrid=False,
         automargin=True,
+        tickangle=0 if orientation == "h" or count <= 4 else -25,
     )
     value_settings = _percent_axis(metric) if metric == TREND_MARGIN else _currency_axis(metric)
     value_settings["showgrid"] = True
     value_settings["gridcolor"] = "#E2E8F0"
     value_settings["zeroline"] = True
     value_settings["zerolinecolor"] = "#CBD5E1"
+    value_settings["automargin"] = True
     if value_axis == "x":
         figure.update_yaxes(**category_axis)
         figure.update_xaxes(**value_settings)
