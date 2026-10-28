@@ -1,7 +1,6 @@
+# CAUSE runtime dependencies (used by Streamlit Community Cloud and local runs).
 streamlit>=1.65.0,<2
-pandas>=2.2.0
+pandas>=2.2.0,<4      # <4: DataFrame.join lsuffix/rsuffix is removed in pandas 4
 numpy>=1.26.0
 plotly>=5.22.0
-openpyxl>=3.1.0
--r requirements.txt
-pytest>=8.0
+openpyxl>=3.1.0   # reads the Global Superstore .xlsx file

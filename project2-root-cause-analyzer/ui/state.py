@@ -47,6 +47,9 @@ PERIOD_KEYS = {
     Granularity.YEAR: "p_year",
 }
 ALL_KEYS = [*FILTER_KEYS.values(), GRANULARITY_KEY, MODE_KEY, CUSTOM_KEY, *PERIOD_KEYS.values()]
+# Page-level widgets (investigation settings, driver dimension) that must
+# survive navigation; their keys start with one of these prefixes.
+PAGE_KEY_PREFIXES = ("inv_", "drv_")
 
 
 # ------------------------------------------------------------------
@@ -76,7 +79,8 @@ def keep_widget_state() -> None:
     example the Month picker while Quarter is selected). Re-assigning each
     key turns it into plain session state so earlier choices survive.
     """
-    for key in ALL_KEYS:
+    page_keys = [k for k in st.session_state if str(k).startswith(PAGE_KEY_PREFIXES)]
+    for key in [*ALL_KEYS, *page_keys]:
         if key in st.session_state:
             st.session_state[key] = st.session_state[key]
 
@@ -215,3 +219,72 @@ def get_context() -> AnalysisContext:
         st.error("The analysis context is not available. Open the app from app_root_cause.py.")
         st.stop()
     return ctx
+
+
+# ------------------------------------------------------------------
+# Investigation settings (shared by the Investigation and Report pages)
+# ------------------------------------------------------------------
+
+INV_METRIC_KEY = "inv_metric"
+INV_PRIMARY_KEY = "inv_primary"
+INV_SECONDARY_KEY = "inv_secondary"
+NO_SECONDARY = "None"
+NO_PARENT = "All groups"
+
+
+def _parent_key(primary_label: str) -> str:
+    return f"inv_parent_{primary_label}"
+
+
+def investigation_controls(ctx: AnalysisContext, show_drill: bool = True):
+    """Metric / dimension / drill-down selectors.
+
+    Returns InvestigationSettings, or None with a message shown when the
+    choice is incomplete. The same widget keys are used on every page that
+    calls this, so the Investigation and Report pages always agree.
+    """
+    from cause import config
+    from cause.metrics import Metric
+    from cause.report import INVESTIGATION_METRICS, InvestigationSettings
+
+    metric_labels = {m.label: m for m in INVESTIGATION_METRICS}
+    dims = list(config.DIMENSIONS)
+    st.session_state.setdefault(INV_METRIC_KEY, Metric.REVENUE.label)
+    st.session_state.setdefault(INV_PRIMARY_KEY, "Market")
+    st.session_state.setdefault(INV_SECONDARY_KEY, NO_SECONDARY)
+
+    c1, c2, c3 = st.columns([1.6, 1, 1])
+    metric_label = c1.segmented_control("Metric", list(metric_labels), key=INV_METRIC_KEY)
+    primary = c2.selectbox("Break down by", dims, key=INV_PRIMARY_KEY)
+    secondary_options = [NO_SECONDARY] + [d for d in dims if d != primary]
+    if st.session_state[INV_SECONDARY_KEY] not in secondary_options:
+        # The secondary equals the new primary; say so instead of swapping silently.
+        st.session_state[INV_SECONDARY_KEY] = NO_SECONDARY
+        st.toast(f"Secondary dimension cleared: it matched the primary ({primary}).")
+    secondary = c3.selectbox("Then by", secondary_options, key=INV_SECONDARY_KEY,
+                             help="Optional second dimension for combinations and drill-down.")
+    if metric_label is None:
+        st.info("Choose a metric to investigate.")
+        return None
+
+    parent = None
+    if show_drill and secondary != NO_SECONDARY:
+        column = config.DIMENSIONS[primary]
+        groups = sorted(set(ctx.current[column]).union(ctx.previous[column]))
+        key = _parent_key(primary)
+        st.session_state.setdefault(key, NO_PARENT)
+        saved = st.session_state[key]
+        options = [NO_PARENT, *groups] + ([saved] if saved not in groups and saved != NO_PARENT else [])
+        choice = st.selectbox(
+            f"Drill into one {primary.lower()}", options, key=key,
+            help=f"Pick a {primary.lower()} to break it down by {secondary.lower()}, "
+                 f"or keep '{NO_PARENT}' to see every {primary.lower()} × {secondary.lower()} combination.",
+        )
+        parent = None if choice == NO_PARENT else choice
+
+    return InvestigationSettings(
+        metric=metric_labels[metric_label],
+        primary=config.DIMENSIONS[primary],
+        secondary=None if secondary == NO_SECONDARY else config.DIMENSIONS[secondary],
+        parent=parent,
+    )

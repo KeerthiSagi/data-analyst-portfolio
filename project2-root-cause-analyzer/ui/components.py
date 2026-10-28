@@ -175,3 +175,51 @@ def methodology_section() -> None:
         st.caption(CAUSATION_NOTE)
         for title, body in METHODOLOGY:
             st.markdown(f"**{title}.** {body}")
+
+
+# ------------------------------------------------------------------
+# Tables and downloads
+# ------------------------------------------------------------------
+
+FORMATS = {
+    "money": "$%,.0f",
+    "money_change": "%+,.0f",
+    "money2": "$%,.2f",
+    "count": "%,.0f",
+    "count1": "%,.1f",
+    "count_change": "%+,.1f",
+    "pct": "%+.1f%%",
+    "share": "%.1f%%",
+    "plain_pct": "%.1f%%",
+    "pp": "%+.2f pp",
+}
+
+
+def numeric_table(df, formats: dict[str, str], height: int | None = None, key: str | None = None) -> None:
+    """Numeric dataframe with per-column display formats (values stay numeric).
+
+    `formats` maps column name -> a FORMATS key or a printf format.
+    """
+    config = {
+        col: st.column_config.NumberColumn(col, format=FORMATS.get(fmt, fmt))
+        for col, fmt in formats.items() if col in df.columns
+    }
+    kwargs = {"height": height} if height else {}
+    st.dataframe(df, column_config=config, hide_index=True, width="stretch", key=key, **kwargs)
+
+
+def finding_callouts(findings, limit: int | None = None) -> None:
+    """Render cause.insights.Finding objects as callouts."""
+    for f in findings[:limit] if limit else findings:
+        callout(f.title, f.detail, f.tone)
+
+
+def causation_note() -> None:
+    callout("Contribution, not causation", CAUSATION_NOTE, "caution")
+
+
+def kpi_cards(displays) -> None:
+    """Render ui.chart_data.KpiDisplay items as a card row."""
+    kpi_row([
+        kpi_card_html(d.label, d.value, d.delta, d.tone, d.footnote, d.flagged) for d in displays
+    ])
