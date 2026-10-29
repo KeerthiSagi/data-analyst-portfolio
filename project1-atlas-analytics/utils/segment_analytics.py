@@ -11,6 +11,22 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
+from utils.palette import (
+    ACCENT,
+    CARD,
+    CATEGORICAL,
+    CHART_FONT,
+    CHART_HOVERLABEL,
+    GRID,
+    MARGIN_COLOR,
+    NEGATIVE,
+    NEUTRAL_MARK,
+    ORDERS_COLOR,
+    PROFIT_COLOR,
+    REVENUE_COLOR,
+    ZEROLINE,
+)
+
 from utils.kpi_metrics import (
     GRAIN_NAMES,
     aggregate_kpi_trends,
@@ -20,18 +36,14 @@ from utils.kpi_metrics import (
 
 
 SEGMENT_COLORS = {
-    "Consumer": "#4F46E5",
-    "Corporate": "#8B5CF6",
-    "Home Office": "#0EA5E9",
+    "Consumer": CATEGORICAL[0],
+    "Corporate": CATEGORICAL[1],
+    "Home Office": CATEGORICAL[2],
 }
 
-# Trend and discount comparisons use the Phase 4B palette. The Phase 4A
-# contribution chart keeps SEGMENT_COLORS.
-TREND_SEGMENT_COLORS = {
-    "Consumer": "#4F46E5",
-    "Corporate": "#10B981",
-    "Home Office": "#8B5CF6",
-}
+# Trend and discount comparisons use the same per-segment colors as the
+# contribution chart, so each segment keeps one color across the page.
+TREND_SEGMENT_COLORS = dict(SEGMENT_COLORS)
 
 DISCOUNT_BINS = [-0.001, 0.0, 0.1, 0.2, 0.3, np.inf]
 DISCOUNT_LABELS = ["0%", ">0%–10%", ">10%–20%", ">20%–30%", ">30%"]
@@ -40,13 +52,13 @@ TREND_METRICS = ("Revenue", "Profit", "Profit Margin")
 SEGMENT_ORDER = ("Consumer", "Corporate", "Home Office")
 
 METRIC_SPECS = {
-    "Revenue": ("revenue", "currency", "#4F46E5"),
-    "Profit": ("profit", "currency", "#10B981"),
-    "Profit Margin": ("margin", "percent", "#8B5CF6"),
-    "Average Order Value": ("aov", "currency", "#0EA5E9"),
+    "Revenue": ("revenue", "currency", REVENUE_COLOR),
+    "Profit": ("profit", "currency", PROFIT_COLOR),
+    "Profit Margin": ("margin", "percent", MARGIN_COLOR),
+    "Average Order Value": ("aov", "currency", ORDERS_COLOR),
 }
 
-NEGATIVE_COLOR = "#DC2626"
+NEGATIVE_COLOR = NEGATIVE
 
 PERFORMANCE_COLUMNS = [
     "segment",
@@ -322,7 +334,7 @@ def build_revenue_contribution(performance: pd.DataFrame):
     return _ranked_bar(
         performance,
         column="revenue",
-        color="#4F46E5",
+        color=REVENUE_COLOR,
         kind="currency",
         axis_title="Revenue",
         color_by_segment=True,
@@ -335,7 +347,7 @@ def build_margin_chart(performance: pd.DataFrame):
     return _ranked_bar(
         performance,
         column="margin",
-        color="#8B5CF6",
+        color=MARGIN_COLOR,
         kind="percent",
         axis_title="Profit margin",
     )
@@ -380,12 +392,12 @@ def _ranked_bar(performance, column, color, kind, axis_title, color_by_segment=F
     figure.update_layout(
         height=height,
         margin=dict(l=72, r=36, t=24, b=56, pad=4),
-        paper_bgcolor="white",
-        plot_bgcolor="white",
+        paper_bgcolor=CARD,
+        plot_bgcolor=CARD,
         showlegend=False,
         bargap=bargap,
-        font=dict(family="Source Sans Pro, sans-serif", color="#0F172A", size=13),
-        hoverlabel=dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0", font=dict(size=12), align="left"),
+        font=CHART_FONT,
+        hoverlabel=CHART_HOVERLABEL,
     )
     value_axis = _currency_axis(axis_title) if kind == "currency" else _percent_axis(axis_title)
     value_axis = {**value_axis, "automargin": True}
@@ -427,9 +439,9 @@ def _currency_axis(title):
         title=title,
         tickformat="$,.0f",
         showgrid=True,
-        gridcolor="#E2E8F0",
+        gridcolor=GRID,
         zeroline=True,
-        zerolinecolor="#CBD5E1",
+        zerolinecolor=ZEROLINE,
         rangemode="normal",
     )
 
@@ -439,9 +451,9 @@ def _percent_axis(title):
         title=title,
         ticksuffix="%",
         showgrid=True,
-        gridcolor="#E2E8F0",
+        gridcolor=GRID,
         zeroline=True,
-        zerolinecolor="#CBD5E1",
+        zerolinecolor=ZEROLINE,
         rangemode="normal",
     )
 
@@ -558,7 +570,7 @@ def build_loss_chart(performance: pd.DataFrame):
     if int(performance["negative_line_items"].sum()) == 0:
         return None
     plot_df = performance.sort_values("loss_amount", ascending=False)
-    colors = [NEGATIVE_COLOR if float(value) < 0 else "#94A3B8" for value in plot_df["loss_amount"]]
+    colors = [NEGATIVE_COLOR if float(value) < 0 else NEUTRAL_MARK for value in plot_df["loss_amount"]]
     hover = [_loss_hover(row) for row in plot_df.to_dict("records")]
     figure = go.Figure(
         data=[
@@ -615,7 +627,7 @@ def build_discount_chart(discount: pd.DataFrame, metric: str):
                 name=segment,
                 x=list(DISCOUNT_LABELS),
                 y=part[column],
-                marker=dict(color=TREND_SEGMENT_COLORS.get(segment, "#4F46E5")),
+                marker=dict(color=TREND_SEGMENT_COLORS.get(segment, ACCENT)),
                 hovertext=hover,
                 hovertemplate="%{hovertext}<extra></extra>",
             )
@@ -664,8 +676,8 @@ def build_segment_trend(trends: pd.DataFrame, metric: str):
                 y=part[column],
                 mode="markers" if point_count == 1 else "lines",
                 connectgaps=False,
-                line=dict(color=TREND_SEGMENT_COLORS.get(segment, "#4F46E5"), width=2.4),
-                marker=dict(color=TREND_SEGMENT_COLORS.get(segment, "#4F46E5"), size=7),
+                line=dict(color=TREND_SEGMENT_COLORS.get(segment, ACCENT), width=2.4),
+                marker=dict(color=TREND_SEGMENT_COLORS.get(segment, ACCENT), size=7),
                 hovertext=custom,
                 hovertemplate="%{hovertext}<extra></extra>",
             )
@@ -917,10 +929,10 @@ def _chart_layout(height: int) -> dict:
     return dict(
         height=height,
         margin=dict(l=56, r=28, t=48, b=64, pad=4),
-        paper_bgcolor="white",
-        plot_bgcolor="white",
-        font=dict(family="Source Sans Pro, sans-serif", color="#0F172A", size=13),
-        hoverlabel=dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0", font=dict(size=12), align="left"),
+        paper_bgcolor=CARD,
+        plot_bgcolor=CARD,
+        font=CHART_FONT,
+        hoverlabel=CHART_HOVERLABEL,
     )
 
 

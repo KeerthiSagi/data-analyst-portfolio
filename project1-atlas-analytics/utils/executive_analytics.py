@@ -12,6 +12,18 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
+from utils.palette import (
+    CARD,
+    CHART_FONT,
+    CHART_HOVERLABEL,
+    GRID,
+    MARGIN_COLOR,
+    NEGATIVE,
+    PROFIT_COLOR,
+    REVENUE_COLOR,
+    ZEROLINE,
+)
+
 from utils.kpi_metrics import format_exact_currency
 
 
@@ -29,12 +41,12 @@ METRIC_COLUMN = {
 }
 
 METRIC_COLOR = {
-    TREND_REVENUE: "#4F46E5",
-    TREND_PROFIT: "#10B981",
-    TREND_MARGIN: "#8B5CF6",
+    TREND_REVENUE: REVENUE_COLOR,
+    TREND_PROFIT: PROFIT_COLOR,
+    TREND_MARGIN: MARGIN_COLOR,
 }
 
-NEGATIVE_COLOR = "#DC2626"
+NEGATIVE_COLOR = NEGATIVE
 
 DISCOUNT_BINS = [-0.001, 0.0, 0.1, 0.2, 0.3, 1.01]
 DISCOUNT_LABELS = ["No discount", "0–10%", "10–20%", "20–30%", "Above 30%"]
@@ -198,10 +210,10 @@ def build_trend_figure(trends, selection: str):
     figure.update_layout(
         height=380,
         margin=dict(l=48, r=28, t=48, b=64, pad=4),
-        paper_bgcolor="white",
-        plot_bgcolor="white",
-        font=dict(family="Source Sans Pro, sans-serif", color="#0F172A", size=13),
-        hoverlabel=dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0", font=dict(size=12), align="left"),
+        paper_bgcolor=CARD,
+        plot_bgcolor=CARD,
+        font=CHART_FONT,
+        hoverlabel=CHART_HOVERLABEL,
     )
     figure.update_xaxes(
         type="date",
@@ -269,12 +281,12 @@ def build_performance_bar(summary: pd.DataFrame, metric: str, orientation: str):
     figure.update_layout(
         height=height,
         margin=margins,
-        paper_bgcolor="white",
-        plot_bgcolor="white",
+        paper_bgcolor=CARD,
+        plot_bgcolor=CARD,
         showlegend=False,
         bargap=bargap,
-        font=dict(family="Source Sans Pro, sans-serif", color="#0F172A", size=13),
-        hoverlabel=dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0", font=dict(size=12), align="left"),
+        font=CHART_FONT,
+        hoverlabel=CHART_HOVERLABEL,
     )
     category_axis = dict(
         categoryorder="array",
@@ -286,9 +298,9 @@ def build_performance_bar(summary: pd.DataFrame, metric: str, orientation: str):
     )
     value_settings = _percent_axis(metric) if metric == TREND_MARGIN else _currency_axis(metric)
     value_settings["showgrid"] = True
-    value_settings["gridcolor"] = "#E2E8F0"
+    value_settings["gridcolor"] = GRID
     value_settings["zeroline"] = True
-    value_settings["zerolinecolor"] = "#CBD5E1"
+    value_settings["zerolinecolor"] = ZEROLINE
     value_settings["automargin"] = True
     if value_axis == "x":
         figure.update_yaxes(**category_axis)
@@ -608,9 +620,9 @@ def _currency_axis(title, overlaying=None, side=None):
         tickformat="$,.0f",
         separatethousands=True,
         showgrid=True,
-        gridcolor="#E2E8F0",
+        gridcolor=GRID,
         zeroline=True,
-        zerolinecolor="#CBD5E1",
+        zerolinecolor=ZEROLINE,
         rangemode="normal",
     )
     if overlaying:
@@ -625,9 +637,9 @@ def _percent_axis(title):
         title=title,
         ticksuffix="%",
         showgrid=True,
-        gridcolor="#E2E8F0",
+        gridcolor=GRID,
         zeroline=True,
-        zerolinecolor="#CBD5E1",
+        zerolinecolor=ZEROLINE,
         rangemode="normal",
     )
 

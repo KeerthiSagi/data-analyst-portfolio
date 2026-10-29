@@ -43,7 +43,7 @@ class NavigationContractTests(unittest.TestCase):
 
     def test_theme_defines_atlas_plotly_and_nav_chrome(self):
         theme = (ROOT / "utils" / "theme.py").read_text()
-        self.assertIn("plotly_white+atlas", theme)
+        self.assertIn("atlas_dark", theme)
         self.assertIn("atlas-brand", theme)
         self.assertIn("section-nav", theme)
         self.assertTrue(callable(render_sidebar_brand))

@@ -215,7 +215,7 @@ class SparklineAggregationTests(unittest.TestCase):
         self.assertFalse(figure.layout.xaxis.visible)
         self.assertFalse(figure.layout.yaxis.visible)
         self.assertFalse(figure.layout.showlegend)
-        self.assertEqual(figure.data[0].line.color, "#10B981")
+        self.assertEqual(figure.data[0].line.color, "#D95926")
 
     def test_one_day_period_renders_a_single_marker(self):
         day = date(2014, 7, 8)
@@ -258,9 +258,9 @@ class SparklineAggregationTests(unittest.TestCase):
         margin_figure = build_sparkline(trends.margin, "margin")
         orders_figure = build_sparkline(trends.orders, "orders")
 
-        self.assertEqual(revenue_figure.data[0].line.color, "#4F46E5")
-        self.assertEqual(margin_figure.data[0].line.color, "#8B5CF6")
-        self.assertEqual(orders_figure.data[0].line.color, "#0EA5E9")
+        self.assertEqual(revenue_figure.data[0].line.color, "#4F8CFF")
+        self.assertEqual(margin_figure.data[0].line.color, "#9085E9")
+        self.assertEqual(orders_figure.data[0].line.color, "#199E70")
         self.assertIn("Jan 2014", trends.revenue["label"].tolist())
         self.assertFalse(revenue_figure.data[0].connectgaps)
 
@@ -272,9 +272,9 @@ class ComparisonCopyTests(unittest.TestCase):
         margin, _ = format_period_comparison(1.46, unit=" pp")
 
         self.assertEqual(revenue, "▲ 12.4% vs prior period")
-        self.assertEqual(revenue_color, "#059669")
+        self.assertEqual(revenue_color, "#34D399")
         self.assertEqual(decline, "▼ 3.2% vs prior period")
-        self.assertEqual(decline_color, "#DC2626")
+        self.assertEqual(decline_color, "#FB7185")
         self.assertEqual(margin, "▲ 1.5 pp vs prior period")
 
     def test_missing_comparison_is_not_a_fake_zero(self):
@@ -308,7 +308,7 @@ class ComparisonCopyTests(unittest.TestCase):
         )
 
         self.assertEqual(narrowed, "▲ Loss narrowed by $50 vs prior period")
-        self.assertEqual(narrowed_color, "#059669")
+        self.assertEqual(narrowed_color, "#34D399")
         self.assertNotIn("%", narrowed)
         self.assertEqual(widened, "▼ Loss widened by $50 vs prior period")
         self.assertNotIn("%", widened)

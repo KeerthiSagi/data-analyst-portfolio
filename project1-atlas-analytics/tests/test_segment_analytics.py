@@ -169,7 +169,7 @@ class SegmentKpiTests(unittest.TestCase):
         self.assertLess(float(corporate["profit"]), 0)
         self.assertLess(float(corporate["margin"]), 0)
         self.assertTrue(pd.isna(performance["profit_share"]).all())
-        self.assertIn("#DC2626", list(figure.data[0].marker.color))
+        self.assertIn("#FB7185", list(figure.data[0].marker.color))
         self.assertIn("Corporate", text)
         self.assertIn("negative profit", text.lower())
         self.assertFalse(findings["profit_share_available"])

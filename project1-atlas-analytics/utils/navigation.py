@@ -37,8 +37,8 @@ def render_sidebar_brand() -> None:
     st.sidebar.markdown(
         """
         <div class="atlas-brand">
-            <div class="atlas-brand-mark">◈ ATLAS ANALYTICS</div>
-            <div class="atlas-brand-tagline">Global Sales Intelligence</div>
+            <div class="atlas-brand-mark"><span class="atlas-brand-accent">◈</span> ATLAS</div>
+            <div class="atlas-brand-tagline">Analytics · Global sales intelligence</div>
         </div>
         """,
         unsafe_allow_html=True,

@@ -11,6 +11,23 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
+from utils.palette import (
+    ACCENT,
+    CARD,
+    CATEGORICAL,
+    CHART_FONT,
+    CHART_HOVERLABEL,
+    GRID,
+    NEGATIVE,
+    PROFIT_COLOR,
+    REVENUE_COLOR,
+    SHIP_COST_COLOR,
+    SHIP_DAYS_COLOR,
+    SHIP_RATIO_COLOR,
+    TEXT_SECONDARY,
+    ZEROLINE,
+)
+
 from utils.kpi_metrics import (
     GRAIN_NAMES,
     format_exact_currency,
@@ -19,23 +36,23 @@ from utils.kpi_metrics import (
 
 
 SHIP_MODE_COLORS = {
-    "Standard Class": "#4F46E5",
-    "Second Class": "#8B5CF6",
-    "First Class": "#0EA5E9",
-    "Same Day": "#10B981",
+    "Standard Class": CATEGORICAL[0],
+    "Second Class": CATEGORICAL[1],
+    "First Class": CATEGORICAL[2],
+    "Same Day": CATEGORICAL[3],
 }
 
 SHIP_MODE_METRICS = {
-    "Revenue": ("revenue", "currency", "#4F46E5"),
-    "Profit": ("profit", "currency", "#10B981"),
-    "Shipping Cost": ("shipping_cost", "currency", "#8B5CF6"),
-    "Shipping Cost Ratio": ("shipping_cost_ratio", "percent", "#F59E0B"),
-    "Average Order-to-Shipment Days": ("avg_processing_days", "days", "#0EA5E9"),
+    "Revenue": ("revenue", "currency", REVENUE_COLOR),
+    "Profit": ("profit", "currency", PROFIT_COLOR),
+    "Shipping Cost": ("shipping_cost", "currency", SHIP_COST_COLOR),
+    "Shipping Cost Ratio": ("shipping_cost_ratio", "percent", SHIP_RATIO_COLOR),
+    "Average Order-to-Shipment Days": ("avg_processing_days", "days", SHIP_DAYS_COLOR),
 }
 
 REGION_SHIP_METRICS = {
-    "Total Shipping Cost": ("shipping_cost", "currency", "#4F46E5"),
-    "Shipping Cost Ratio": ("shipping_cost_ratio", "percent", "#8B5CF6"),
+    "Total Shipping Cost": ("shipping_cost", "currency", ACCENT),
+    "Shipping Cost Ratio": ("shipping_cost_ratio", "percent", SHIP_COST_COLOR),
 }
 
 TREND_METRICS = (
@@ -44,7 +61,7 @@ TREND_METRICS = (
     "Average Order-to-Shipment Days",
 )
 
-NEGATIVE_COLOR = "#DC2626"
+NEGATIVE_COLOR = NEGATIVE
 
 
 def filter_shipping_modes(df: pd.DataFrame, modes) -> pd.DataFrame:
@@ -386,7 +403,7 @@ def build_processing_distribution(distribution: pd.DataFrame):
             go.Bar(
                 x=distribution["days"],
                 y=distribution["line_items"],
-                marker=dict(color="#0EA5E9"),
+                marker=dict(color=SHIP_DAYS_COLOR),
                 hovertemplate=(
                     "Order-to-shipment days: %{x}<br>Line items: %{y:,}<extra></extra>"
                 ),
@@ -398,7 +415,7 @@ def build_processing_distribution(distribution: pd.DataFrame):
     figure.update_yaxes(
         title="Line items",
         showgrid=True,
-        gridcolor="#E2E8F0",
+        gridcolor=GRID,
         tickformat=",",
     )
     return figure
@@ -411,7 +428,7 @@ def build_processing_by_mode(by_mode: pd.DataFrame):
         by_mode,
         label_column="ship_mode",
         value_column="avg_processing_days",
-        color="#0EA5E9",
+        color=SHIP_DAYS_COLOR,
         kind="days",
         axis_title="Average order-to-shipment days",
         color_map=SHIP_MODE_COLORS,
@@ -426,7 +443,7 @@ def build_cost_margin_scatter(modes: pd.DataFrame):
     plot = modes.dropna(subset=["shipping_cost_ratio", "margin"])
     if plot.empty:
         return None
-    colors = [SHIP_MODE_COLORS.get(mode, "#4F46E5") for mode in plot["ship_mode"]]
+    colors = [SHIP_MODE_COLORS.get(mode, ACCENT) for mode in plot["ship_mode"]]
     hover = [
         (
             f"{row.ship_mode}<br>Shipping cost ratio: {row.shipping_cost_ratio:.2f}%"
@@ -436,6 +453,13 @@ def build_cost_margin_scatter(modes: pd.DataFrame):
         )
         for row in plot.itertuples()
     ]
+    # Labels near the plot edges anchor inward so they are not clipped.
+    ratios = plot["shipping_cost_ratio"].astype(float)
+    low, span = float(ratios.min()), float(ratios.max() - ratios.min())
+    positions = []
+    for value in ratios:
+        share = (value - low) / span if span else 0.5
+        positions.append("top right" if share < 0.15 else "top left" if share > 0.85 else "top center")
     figure = go.Figure(
         data=[
             go.Scatter(
@@ -443,7 +467,9 @@ def build_cost_margin_scatter(modes: pd.DataFrame):
                 y=plot["margin"],
                 mode="markers+text",
                 text=plot["ship_mode"],
-                textposition="top center",
+                textposition=positions,
+                textfont=dict(color=TEXT_SECONDARY, size=12),
+                cliponaxis=False,
                 marker=dict(size=14, color=colors),
                 hovertext=hover,
                 hovertemplate="%{hovertext}<extra></extra>",
@@ -481,8 +507,8 @@ def build_shipping_trend(trends: pd.DataFrame, metric: str):
                 y=trends[column],
                 mode="markers" if point_count == 1 else "lines",
                 connectgaps=False,
-                line=dict(color="#4F46E5", width=2.4),
-                marker=dict(color="#4F46E5", size=7),
+                line=dict(color=ACCENT, width=2.4),
+                marker=dict(color=ACCENT, size=7),
                 hovertext=hover,
                 hovertemplate="%{hovertext}<extra></extra>",
             )
@@ -672,12 +698,12 @@ def _ranked_bar(frame, label_column, value_column, color, kind, axis_title, colo
     figure.update_layout(
         height=height,
         margin=dict(l=72, r=36, t=24, b=56, pad=4),
-        paper_bgcolor="white",
-        plot_bgcolor="white",
+        paper_bgcolor=CARD,
+        plot_bgcolor=CARD,
         showlegend=False,
         bargap=bargap,
-        font=dict(family="Source Sans Pro, sans-serif", color="#0F172A", size=13),
-        hoverlabel=dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0", font=dict(size=12), align="left"),
+        font=CHART_FONT,
+        hoverlabel=CHART_HOVERLABEL,
     )
     if kind == "currency":
         figure.update_xaxes(**{**_currency_axis(axis_title), "automargin": True})
@@ -717,10 +743,10 @@ def _chart_layout(height: int) -> dict:
     return dict(
         height=height,
         margin=dict(l=56, r=28, t=40, b=64, pad=4),
-        paper_bgcolor="white",
-        plot_bgcolor="white",
-        font=dict(family="Source Sans Pro, sans-serif", color="#0F172A", size=13),
-        hoverlabel=dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0", font=dict(size=12), align="left"),
+        paper_bgcolor=CARD,
+        plot_bgcolor=CARD,
+        font=CHART_FONT,
+        hoverlabel=CHART_HOVERLABEL,
     )
 
 
@@ -729,9 +755,9 @@ def _currency_axis(title):
         title=title,
         tickformat="$,.0f",
         showgrid=True,
-        gridcolor="#E2E8F0",
+        gridcolor=GRID,
         zeroline=True,
-        zerolinecolor="#CBD5E1",
+        zerolinecolor=ZEROLINE,
         rangemode="normal",
     )
 
@@ -741,9 +767,9 @@ def _percent_axis(title):
         title=title,
         ticksuffix="%",
         showgrid=True,
-        gridcolor="#E2E8F0",
+        gridcolor=GRID,
         zeroline=True,
-        zerolinecolor="#CBD5E1",
+        zerolinecolor=ZEROLINE,
         rangemode="normal",
     )
 
@@ -753,9 +779,9 @@ def _days_axis(title):
         title=title,
         ticksuffix=" days",
         showgrid=True,
-        gridcolor="#E2E8F0",
+        gridcolor=GRID,
         zeroline=True,
-        zerolinecolor="#CBD5E1",
+        zerolinecolor=ZEROLINE,
         rangemode="tozero",
     )
 

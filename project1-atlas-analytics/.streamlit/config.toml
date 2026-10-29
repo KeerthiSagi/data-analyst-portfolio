@@ -1,0 +1,36 @@
+# ATLAS midnight-blue theme (shared visual identity with CAUSE).
+#
+# Streamlit reads this file from the folder next to app_kpi_dashboard.py and
+# it takes precedence over the repository root's .streamlit/config.toml, so
+# the dark theme applies whether the app is launched from this folder or
+# from the repository root.
+
+[theme]
+base = "dark"
+primaryColor = "#4F8CFF"
+backgroundColor = "#080F20"
+secondaryBackgroundColor = "#142440"
+textColor = "#F1F5F9"
+borderColor = "#253B5B"
+showWidgetBorder = true
+linkColor = "#7FAEFF"
+font = "sans-serif"
+baseRadius = "10px"
+dataframeHeaderBackgroundColor = "#0D1930"
+dataframeHeaderTextColor = "#94A3B8"
+dataframeBorderColor = "#253B5B"
+greenColor = "#34D399"
+redColor = "#FB7185"
+blueColor = "#4F8CFF"
+chartCategoricalColors = ["#4F8CFF", "#D95926", "#199E70", "#C98500", "#D55181", "#008300", "#9085E9", "#E66767"]
+
+[theme.sidebar]
+backgroundColor = "#0D1930"
+secondaryBackgroundColor = "#142440"
+borderColor = "#253B5B"
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false

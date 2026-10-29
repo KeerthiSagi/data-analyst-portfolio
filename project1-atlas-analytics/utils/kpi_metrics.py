@@ -12,6 +12,19 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
+from utils.palette import (
+    CHART_HOVERLABEL,
+    FONT_STACK,
+    MARGIN_COLOR,
+    NEGATIVE,
+    ORDERS_COLOR,
+    POSITIVE,
+    PROFIT_COLOR,
+    REVENUE_COLOR,
+    TEXT,
+    TEXT_SECONDARY,
+)
+
 
 # Short windows stay daily, medium windows roll up to weeks, and longer
 # reporting periods use months so the sparkline stays readable.
@@ -19,15 +32,15 @@ DAILY_MAX_DAYS = 45
 WEEKLY_MAX_DAYS = 180
 
 SPARKLINE_COLORS = {
-    "revenue": "#4F46E5",
-    "profit": "#10B981",
-    "margin": "#8B5CF6",
-    "orders": "#0EA5E9",
+    "revenue": REVENUE_COLOR,
+    "profit": PROFIT_COLOR,
+    "margin": MARGIN_COLOR,
+    "orders": ORDERS_COLOR,
 }
 
-COMPARISON_POSITIVE = "#059669"
-COMPARISON_NEGATIVE = "#DC2626"
-COMPARISON_MUTED = "#94A3B8"
+COMPARISON_POSITIVE = POSITIVE
+COMPARISON_NEGATIVE = NEGATIVE
+COMPARISON_MUTED = TEXT_SECONDARY
 
 GRAIN_NAMES = {
     "D": "Daily",
@@ -257,7 +270,8 @@ def build_sparkline(frame: pd.DataFrame, metric: str):
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         hovermode="closest",
-        font=dict(family="Source Sans Pro, sans-serif", size=12, color="#0F172A"),
+        font=dict(family=FONT_STACK, size=12, color=TEXT),
+        hoverlabel=CHART_HOVERLABEL,
     )
     figure.update_xaxes(
         visible=False,

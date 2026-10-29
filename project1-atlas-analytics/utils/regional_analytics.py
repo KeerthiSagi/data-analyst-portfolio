@@ -10,6 +10,22 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
+from utils.palette import (
+    ACCENT,
+    CARD,
+    CATEGORICAL,
+    CHART_FONT,
+    CHART_HOVERLABEL,
+    GRID,
+    MARGIN_COLOR,
+    NEGATIVE,
+    ORDERS_COLOR,
+    PROFIT_COLOR,
+    REGION_EXTRA,
+    REVENUE_COLOR,
+    ZEROLINE,
+)
+
 from utils.kpi_metrics import (
     GRAIN_NAMES,
     aggregate_kpi_trends,
@@ -19,30 +35,34 @@ from utils.kpi_metrics import (
 
 
 METRIC_SPECS = {
-    "Revenue": ("revenue", "currency", "#4F46E5"),
-    "Profit": ("profit", "currency", "#10B981"),
-    "Profit Margin": ("margin", "percent", "#8B5CF6"),
-    "Average Order Value": ("aov", "currency", "#0EA5E9"),
+    "Revenue": ("revenue", "currency", REVENUE_COLOR),
+    "Profit": ("profit", "currency", PROFIT_COLOR),
+    "Profit Margin": ("margin", "percent", MARGIN_COLOR),
+    "Average Order Value": ("aov", "currency", ORDERS_COLOR),
 }
 
 TREND_METRICS = ("Revenue", "Profit", "Profit Margin")
-NEGATIVE_COLOR = "#DC2626"
+NEGATIVE_COLOR = NEGATIVE
 DEFAULT_TREND_REGIONS = 5
 
+# One fixed color per region, whatever the filters. The eight CAUSE
+# categorical colors go to the largest regions by revenue (so the default
+# top-region trend view uses the best-separated colors); the five smaller
+# regions use the extra steps.
 REGION_COLORS = {
-    "Central": "#4F46E5",
-    "South": "#8B5CF6",
-    "North": "#10B981",
-    "Oceania": "#0EA5E9",
-    "Southeast Asia": "#F59E0B",
-    "North Asia": "#EC4899",
-    "EMEA": "#6366F1",
-    "Africa": "#14B8A6",
-    "Central Asia": "#A855F7",
-    "West": "#3B82F6",
-    "East": "#22C55E",
-    "Caribbean": "#F97316",
-    "Canada": "#64748B",
+    "Central": CATEGORICAL[0],
+    "South": CATEGORICAL[1],
+    "North": CATEGORICAL[2],
+    "Oceania": CATEGORICAL[3],
+    "Southeast Asia": CATEGORICAL[4],
+    "North Asia": CATEGORICAL[5],
+    "EMEA": CATEGORICAL[6],
+    "Africa": CATEGORICAL[7],
+    "Central Asia": REGION_EXTRA[0],
+    "West": REGION_EXTRA[1],
+    "East": REGION_EXTRA[2],
+    "Caribbean": REGION_EXTRA[3],
+    "Canada": REGION_EXTRA[4],
 }
 
 PERFORMANCE_COLUMNS = [
@@ -323,7 +343,7 @@ def build_revenue_contribution(performance: pd.DataFrame):
     return _ranked_bar(
         performance,
         column="revenue",
-        color="#4F46E5",
+        color=REVENUE_COLOR,
         kind="currency",
         axis_title="Revenue",
         color_by_region=True,
@@ -336,7 +356,7 @@ def build_margin_chart(performance: pd.DataFrame):
     return _ranked_bar(
         performance,
         column="margin",
-        color="#8B5CF6",
+        color=MARGIN_COLOR,
         kind="percent",
         axis_title="Profit margin",
     )
@@ -356,7 +376,7 @@ def build_regional_trend(trends: pd.DataFrame, metric: str):
         if not part[column].notna().any():
             continue
         point_count = int(part[column].notna().sum())
-        color = REGION_COLORS.get(region, "#4F46E5")
+        color = REGION_COLORS.get(region, ACCENT)
         custom = [_trend_hover(row, column) for row in part.to_dict("records")]
         figure.add_trace(
             go.Scatter(
@@ -597,12 +617,12 @@ def _ranked_bar(performance, column, color, kind, axis_title, color_by_region=Fa
     figure.update_layout(
         height=height,
         margin=dict(l=72, r=36, t=24, b=56, pad=4),
-        paper_bgcolor="white",
-        plot_bgcolor="white",
+        paper_bgcolor=CARD,
+        plot_bgcolor=CARD,
         showlegend=False,
         bargap=bargap,
-        font=dict(family="Source Sans Pro, sans-serif", color="#0F172A", size=13),
-        hoverlabel=dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0", font=dict(size=12), align="left"),
+        font=CHART_FONT,
+        hoverlabel=CHART_HOVERLABEL,
     )
     value_axis = _currency_axis(axis_title) if kind == "currency" else _percent_axis(axis_title)
     value_axis = {**value_axis, "automargin": True}
@@ -663,10 +683,10 @@ def _chart_layout(height: int) -> dict:
     return dict(
         height=height,
         margin=dict(l=56, r=28, t=48, b=64, pad=4),
-        paper_bgcolor="white",
-        plot_bgcolor="white",
-        font=dict(family="Source Sans Pro, sans-serif", color="#0F172A", size=13),
-        hoverlabel=dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0", font=dict(size=12), align="left"),
+        paper_bgcolor=CARD,
+        plot_bgcolor=CARD,
+        font=CHART_FONT,
+        hoverlabel=CHART_HOVERLABEL,
     )
 
 
@@ -679,9 +699,9 @@ def _currency_axis(title):
         title=title,
         tickformat="$,.0f",
         showgrid=True,
-        gridcolor="#E2E8F0",
+        gridcolor=GRID,
         zeroline=True,
-        zerolinecolor="#CBD5E1",
+        zerolinecolor=ZEROLINE,
         rangemode="normal",
     )
 
@@ -691,8 +711,8 @@ def _percent_axis(title):
         title=title,
         ticksuffix="%",
         showgrid=True,
-        gridcolor="#E2E8F0",
+        gridcolor=GRID,
         zeroline=True,
-        zerolinecolor="#CBD5E1",
+        zerolinecolor=ZEROLINE,
         rangemode="normal",
     )

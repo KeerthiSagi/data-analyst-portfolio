@@ -153,7 +153,7 @@ class RegionalKpiTests(unittest.TestCase):
         self.assertLess(float(emea["profit"]), 0)
         self.assertLess(float(emea["margin"]), 0)
         self.assertTrue(pd.isna(performance["profit_share"]).all())
-        self.assertIn("#DC2626", list(figure.data[0].marker.color))
+        self.assertIn("#FB7185", list(figure.data[0].marker.color))
         self.assertIn("EMEA", text)
         self.assertIn("negative profit", text.lower())
         self.assertFalse(findings["profit_share_available"])

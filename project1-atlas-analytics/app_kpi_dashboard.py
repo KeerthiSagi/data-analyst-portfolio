@@ -39,7 +39,7 @@ st.set_page_config(
     page_title="Executive Overview | Atlas Analytics",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto"
 )
 
 initialize_theme()

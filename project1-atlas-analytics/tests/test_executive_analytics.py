@@ -137,7 +137,7 @@ class ExecutiveAggregationTests(unittest.TestCase):
         names = list(figure.data[0].y)
 
         self.assertEqual(names, ["South", "North"])
-        self.assertIn("#DC2626", list(figure.data[0].marker.color))
+        self.assertIn("#FB7185", list(figure.data[0].marker.color))
         self.assertLess(float(regions.loc[regions["name"] == "South", "profit"].iloc[0]), 0)
 
     def test_dual_axis_keeps_revenue_and_profit_apart(self):
@@ -145,15 +145,15 @@ class ExecutiveAggregationTests(unittest.TestCase):
         figure = build_trend_figure(trends, TREND_BOTH)
 
         self.assertEqual(figure.data[0].name, "Revenue")
-        self.assertEqual(figure.data[0].line.color, "#4F46E5")
+        self.assertEqual(figure.data[0].line.color, "#4F8CFF")
         self.assertEqual(figure.data[1].name, "Profit")
-        self.assertEqual(figure.data[1].line.color, "#10B981")
+        self.assertEqual(figure.data[1].line.color, "#D95926")
         self.assertEqual(figure.data[1].yaxis, "y2")
         self.assertEqual(figure.layout.yaxis2.overlaying, "y")
         self.assertFalse(figure.data[0].connectgaps)
 
         margin_figure = build_trend_figure(trends, TREND_MARGIN)
-        self.assertEqual(margin_figure.data[0].line.color, "#8B5CF6")
+        self.assertEqual(margin_figure.data[0].line.color, "#9085E9")
         self.assertTrue(str(margin_figure.layout.yaxis.ticksuffix).endswith("%"))
 
 
